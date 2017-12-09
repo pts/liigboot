@@ -1,5 +1,6 @@
+;
 ; by pts@fazekas.hu at Sat Dec  9 15:48:02 CET 2017
-; Load ldlinux.sys and give control to it.
+; Load ldlinux.sys and give control to it. Works.
 ;
 ; $ nasm -f bin -o boot3.bin boot3.nasm
 ; $ dd if=boot3.bin of=prescue.img bs=1k conv=notrunc
@@ -15,20 +16,55 @@ org 0x7c00  ; The BIOS loads the boot sector
 db 235,88,144,83,89,83,76,73,78,85,88,0,2,4,80,0,1,0,2,0,0,248,0,1,32,0,64,0,0,0,0,0,0,0,4,0,128,0,41,197,22,168,51,112,114,101,115,99,117,101,32,32,32,32,70,65,84,49,54,32,32,32,14,31,190,91,124,172,34,192,116,11,86,180,14,187,7,0,205,16,94,235,240,50,228,205,22,205,25,235
 
 ; Code starts at mem=0x7c58 disk=0x58=90.
+entry2:
 jmp 0:0x7c58 + 5  ; 5 bytes for this jump instruction.
 cli
 cld
+mov esp, 0x7b76
 xor eax, eax
+mov ss, ax
+
+; We have to push 12 items.
+push dx  ; Save drive number, goes to 0x7b74.
+push es  ; Save ES:DI ($PnP), goes to 0x7b72.
+push di  ; Goes to 0x7b70.
+push ds  ; Save DS:SI (partinfo), goes to 0x7b6e.
+push si  ; Goes to 0x7b6c.
+push ax  ; Just copy 0. Part of OrigFDCTabPtr, goes to 0x7b6a.
+push ax  ; Just copy 0. Part of OrigFDCTabPtr, goes to 0x7b68.
+push ax  ; Should be 0. Part of Hidden, goes to 0x7b66.
+push ax  ; Should be 0. Part of Hidden, goes to 0x7b64.
+push ax  ; Should be 0. Part of Hidden, goes to 0x7b62.
+push ax  ; Should be 0. Part of Hidden, goes to 0x7b60.
+
+; STACK_TOP == 0x7c00
+; StackBuf == 0x7b78
+; Hidden == 0x7b60  (dq)
+; OrigFDCTabPtr == 0x7b68 (dd)
+; OrigDSSI == partinfo == 0x7b6c (dd)
+; OrigESDI == $PNP == 0x7b70 (dd)
+; DriveNumber == 0x7b74 (dw)
+; PartInfo == 0x7b78  (76 bytes)
+; PartInfo.mbr == 0x7b78
+; PartInfo.gptlen == 0x7b88
+; PartInfo.gpt == 0x7b8c
+; FloppyTable == 0x7bc4  (16 bytes)
+; !! Should we copy the partinfo?
+
 mov es, ax
 ;mov cs, ax  ; The jmp above did the trick.
 mov ds, ax
-mov ss, ax
-mov esp, 0x7b60
+
+; ASSERT: sp == 0x7b60
+;cmp sp, 0x7b60
+;jne .spok
 
 ; Teletype output	AH=0Eh	AL = Character, BH = Page Number, BL = Color (only in graphic mode)
 mov ax, 0x0e00 + 'B'
 xor bx, bx
 int 0x10
+
+;.spok:
 
 ; !! Detect EBIOS first.
 
