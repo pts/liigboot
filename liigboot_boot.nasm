@@ -1,31 +1,91 @@
 ;
-; by pts@fazekas.hu at Sat Dec  9 15:48:02 CET 2017
-; Load ldlinux.sys and give control to it. Works.
+; liigboot_boot.nasm: MBR bootloader to load ldlinux.sys and give control to it.
+; by pts@fazekas.hu at Wed Dec 20 01:33:02 CET 2017
 ;
-; $ nasm -f bin -o boot3.bin boot3.nasm
-; $ dd if=boot3.bin of=prescue.img bs=1k conv=notrunc
+; To compile just the boot sectors:
 ;
-; http://wiki.osdev.org/MBR_(x86)
-; http://wiki.osdev.org/Boot_Sequence
+;   $ nasm -f bin -o liigresc_bs.bin -DLIIGRESC liigboot_boot.nasm
+;   $ nasm -f bin -o liigboot_bs.bin -DLIIGBOOT liigboot_boot.nasm
+;
+; To compile the entire FAT filesystem with ldlinux.sys in the reserved
+; sectores:
+;
+;   $ nasm -f bin -o liigresc_empty.img -DLIIGRESC -DEMPTYFS liigboot_boot.nasm
+;   $ nasm -f bin -o liigboot_empty.img -DLIIGBOOT -DEMPTYFS liigboot_boot.nasm
+;
+; When compiled without the -DEMPTYFS flag, the output file will be an 512-byte
+; boot sector containing:
+;
+; * a BIOS MBR partition table with 1 entry
+; * bootloader code to load ldlinux.sys from Syslinux 4.06, 39 KiB starting
+;   at sector 2 (byte offset 1024)
+; * filesystem headers of a FAT12 or FAT16 filesystem (BIOS parameter block)
+;
+; When compiled with the -DEMPTYFS flag, the output file will be longer (1
+; MiB or 128 MiB), and it will contain a bootable FAT12 or FAT16 filesystem
+; image with no files on it, and the ldlinux.sys code in its reserved
+; sectors (39 KiB starting at byte offset 1024).
+;
+; TODO(pts): Make it bootable from a partition.
+;
+; Docs:
+;
+; * http://wiki.osdev.org/MBR_(x86)
+; * http://wiki.osdev.org/Boot_Sequence
 
 bits 16
 org 0x7c00  ; The BIOS loads the boot sector.
-
 
 ; 62 bytes of FAT16 filesystem headers (mkfs.vfat creates that many bytes in front of
 ; the boot code), including the BPB (BIOS parameter block).
 ; (FAT32 may need 90 bytes.) Copied from the beginning of ldlinuxmbr.bin .
 entry1:
 jmp strict short entry2  ; db 235,60
+nop  ; db 144
+
+%ifdef LIIGRESC
+%ifdef LIIGBOOT
+%error Do not specify both -DLIIGRESC and -DLIIGBOOT.
+%endif
+%define VOLUME_LABEL 'liigresc   '
+%else
+%ifndef LIIGBOOT
+%error Specify at least -DLIIGRESC and -DLIIGBOOT.
+%endif
+%define VOLUME_LABEL 'liigboot   '
+%endif
+
+; FAT filesystem headers (BPB, BIOS Parameter Block).
+
+db 'SYSLINUX'  ; OEM ID.
+
+%ifdef LIIGRESC
 ; These headers describe a FAT16 filesystem of 128 MiB in size, with 80
 ; reserved sectors, 1 FATs, with volume label 'prescue', volume UUID
 ; 33A8-16C5, 512 root directory entries, 2048 bytes per cluster, 512 bytes
+; per sector. It was created with:
+;
+;   $ mkfs.vfat -f 1 -F 16 -R 80 -n prescue   -i 33A816C5 -r 512 -s 4 -S 512 -C prescue.img 131072
+;
+db 0,2,4,80,0,1,0,2,0,0,248,0,1,32,0,64,0,0,0,0,0,0,0,4,0,128,0,41,197,22,168,51
+db VOLUME_LABEL  ; 11 bytes.
+db 'FAT16   '  ; Filesytem type.
+%endif
+
+%ifdef LIIGBOOT
+; These headers describe a FAT12 filesystem of 1 MiB in size, with 80
+; reserved sectors, 1 FATs, with volume label 'prescue1m', volume UUID
+; 33A8-16C6, 32 root directory entries, 512 bytes per cluster, 512 bytes
 ; per sector. It was created by:
 ;
-;   $ mkfs.vfat -f 1 -F 16 -R 80 -n prescue -i 33A816C5 -r 512 -s 4 -S 512 -C prescue.img 131072
+;   $ mkfs.vfat -f 1 -F 12 -R 80 -n prescue1m -i 33A816C6 -r  32 -s 1 -S 512 -C prescue1m.img 1024
 ;
-db 144,83,89,83,76,73,78,85,88,0,2,4,80,0,1,0,2,0,0,248,0,1,32,0,64,0,0,0,0,0,0,0,4,0,128,0,41,197,22,168,51,112,114,101,115,99,117,101,32,32,32,32,70,65,84,49,54,32,32,32
-; mkfs.vfat creates 52 bytes of headers
+db 0,2,1,80,0,1,32,0,0,8,248,6,0,32,0,64,0,0,0,0,0,0,0,0,0,128,0,41,198,22,168,51
+db VOLUME_LABEL  ; 11 bytes.
+db 'FAT12   '  ; Filesytem type.
+%endif
+
+; mkfs.vfat creates 52 bytes of headers for FAT12 and FAT16 filesystems.
 times 0x3e-($-$$) db 0  ; Doesn't add any additional bytes.
 
 ; Code starts at mem=0x7c58 disk=0x58=90.
@@ -126,9 +186,10 @@ int 0x10
 ;mov edx, 0x1000
 ;mov ebp, 0x8c00
 
+; TODO(pts): Do these addresses change if we relink ldlinux.sys?
 mov [0x80f5], al  ; Use LBA mode (getlinsec_ebios).
 sti
-jmp 0:0x8970  ; all_read, the entry point of ldlinux.sys in syslinux-4.07.
+jmp 0:0x8970  ; all_read, the entry point of syslinux_liigboot.ldlinux.sys (Syslinux 4.07).
 
 ; We have 40 bytes free for new code, but we don't need it.
 ; The region 0xda ... 0xe0 is reserved for the modern standard MBR.
@@ -150,17 +211,65 @@ times 0x1b8-($-$$) db 0
 dd 0x37574cf8  ; Disk signature (UUID)
 dw 0
 ;dq 0, 0  ; Partition entry 1. Empty.
+
+%ifdef LIIGRESC
 ; Partition entry 1. 1 MiB long, starting at 128 MiB (right after prescue).
-; Bootable bit unset.
-;db 0, 0x51, 2, 0x10, 0x83, 0x71, 0x21, 0x10, 0, 0, 4, 0, 0, 8, 0, 0
-; Partition entry 1. 1 MiB long, starting at 64 MiB (right after prescue).
-; Bootable bit unset.
-db 0, 0x51, 2, 0x10, 0x83, 0x71, 0x21, 0x10, 0, 0, 4, 0, 0, 0, 2, 0
+; Bootable bit unset. CHS values are garbage.
+db 0, 0x51, 2, 0x10, 0x83, 0x71, 0x21, 0x10
+dd 128 * 1024 * 1024 / 512  ; LBA start offset.
+dd 1024 * 1024 / 512  ; LBA size.
+%endif
+
+%ifdef LIIGBOOT
+; Partition entry 1. 1 MiB long, starting at 1 MiB (right after prescue).
+; Bootable bit unset. CHS values are garbage.
+db 0, 0x51, 2, 0x10, 0x83, 0x71, 0x21, 0x10
+dd 1024 * 1024 / 512  ; LBA start offset.
+dd 1024 * 1024 / 512  ; LBA size.
+%endif
+
 dq 0, 0  ; Partition entry 2. Empty.
 dq 0, 0  ; Partition entry 3. Empty.
 dq 0, 0  ; Partition entry 4. Empty.
 dw 0xaa55  ; Boot signature.
 
 times 0x200-($-$$) db 0  ; Doesn't add any additional bytes.
+
+%ifdef EMPTYFS
+
+times 0x400-($-$$) db 0
+; $ cmp -l syslinux_liigboot.ldlinux.sys syslinux-4.07.ldlinux.sys 
+;    41 304 312
+;    42 254 114
+;    43  54  55
+;    44  77 217
+;   495   3   1
+;   496   0 260
+; 14233 112 107
+; 14234   0 260
+; 14241 113 110
+; 14242   0 260
+incbin "syslinux_liigboot.ldlinux.sys"
+times 0xa000-($-$$) db 0
+
+%ifdef LIIGRESC
+dw 0xfff8, 0xffff  ; Empty FAT16 FAT.
+times 0x2a000-($-$$) db 0
+db VOLUME_LABEL
+; Rest of the directory entry for the volume label.
+db 8, 0, 0, 0x41, 9, 0x94, 0x4b, 0x94, 0x4b, 0, 0, 0x51, 9, 0x94, 0x4b, 0, 0, 0, 0, 0, 0
+times 0x8000000-($-$$) db 0
+%endif
+
+%ifdef LIIGBOOT
+db 0xf8, 0xff, 0xff  ; Empty FAT12 FAT.
+times 0xac00-($-$$) db 0
+db VOLUME_LABEL
+; Rest of the directory entry for the volume label.
+db 8, 0, 0, 0x41, 4, 0x90, 0x4b, 0x90, 0x4b, 0, 0, 0x41, 4, 0x90, 0x4b, 0, 0, 0, 0, 0, 0
+times 0x100000-($-$$) db 0  ; This is slow (it takes >10 seconds to compile.)
+%endif
+
+%endif  ; EMPTYFS
 
 ; __END__
