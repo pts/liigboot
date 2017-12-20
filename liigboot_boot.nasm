@@ -67,9 +67,23 @@ db 'SYSLINUX'  ; OEM ID.
 ;
 ;   $ mkfs.vfat -f 1 -F 16 -R 80 -n prescue   -i 33A816C5 -r 512 -s 4 -S 512 -C prescue.img 131072
 ;
-db 0,2,4,80,0,1,0,2,0,0,248,0,1,32,0,64,0,0,0,0,0,0,0,4,0,128,0,41,197,22,168,51
+dw 512   ; Sector size in bytes.
+db 4     ; Sectors per cluster.
+dw 80    ; Number of reserved sectors.
+db 1     ; Number of FATs.
+dw 512   ; Number of root directory entries.
+dw 0     ; Number of sectors or 0.
+db 248   ; Media descriptor.
+dw 256   ; Sectors per FAT.
+dw 32    ; Sectors per track (CHS).
+dw 64    ; Heads (CHS).
+dd 0     ; Hidden.
+dd 0x40000 ; Number of sectors if the field above is 0.
+dw 0x80  ; Physical drive number.
+db 0x29  ; B4 BPB signature.
+dd 0x33A816C5    ; UUID (serial number).
 db VOLUME_LABEL  ; 11 bytes.
-db 'FAT16   '  ; Filesytem type.
+db 'FAT16   '    ; Filesytem type.
 %endif
 
 %ifdef LIIGBOOT
@@ -80,9 +94,23 @@ db 'FAT16   '  ; Filesytem type.
 ;
 ;   $ mkfs.vfat -f 1 -F 12 -R 80 -n prescue1m -i 33A816C6 -r  32 -s 1 -S 512 -C prescue1m.img 1024
 ;
-db 0,2,1,80,0,1,32,0,0,8,248,6,0,32,0,64,0,0,0,0,0,0,0,0,0,128,0,41,198,22,168,51
+dw 512   ; Sector size in bytes.
+db 1     ; Sectors per cluster.
+dw 80    ; Number of reserved sectors.
+db 1     ; Number of FATs.
+dw 32    ; Number of root directory entries.
+dw 2048  ; Number of sectors or 0.
+db 248   ; Media descriptor.
+dw 6     ; Sectors per FAT.
+dw 32    ; Sectors per track (CHS).
+dw 64    ; Heads (CHS).
+dd 0     ; Hidden.
+dd 0     ; Number of sectors if the field above is 0.
+dw 0x80  ; Physical drive number.
+db 0x29  ; B4 BPB signature.
+dd 0x33A816C6    ; UUID (serial number).
 db VOLUME_LABEL  ; 11 bytes.
-db 'FAT12   '  ; Filesytem type.
+db 'FAT12   '    ; Filesytem type.
 %endif
 
 ; mkfs.vfat creates 52 bytes of headers for FAT12 and FAT16 filesystems.
