@@ -68,7 +68,7 @@ def main(argv):
   zf = zipfile.ZipFile(ziptmp_file_name, 'w', zipfile.ZIP_DEFLATED)
   try:
     zf.writestr(new_zipinfo('__main__.py', time_now), main_py_code)
-    zf.writestr(new_zipinfo(zip_output_base_name + '.install', time_now), install_data)
+    zf.writestr(new_zipinfo(zip_output_base_name + '.install', time_now, 0755), install_data)
     zf.writestr(new_zipinfo('README.txt', time_now), README_data)
   finally:
     zf.close()
