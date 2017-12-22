@@ -256,7 +256,8 @@ int main(int argc, char **argv) {
       const unsigned mbr_dev = st.st_dev & ~15;
       static char dev_name[32];
       if ((st.st_dev & 15) == 0) {
-        die("fatal: refusing to write to mounted mbr device\n");
+        /* This is because the Ligboot image may overlap with the filesystem. */
+        die("fatal: refusing to install to mounted mbr device\n");
       }
       if (find_device_name(mbr_dev, dev_name, sizeof(dev_name)) != 0) {
         die("fatal: mbr device not found in /dev\n");
@@ -264,6 +265,9 @@ int main(int argc, char **argv) {
       target = dev_name;
       active_part = st.st_dev & 15;
     } else if (S_ISBLK(st.st_mode)) {
+      if ((st.st_rdev & 15) != 0) {
+        die("fatal: refusing to install to partition\n");
+      }
     } else {
       die("fatal: target not a directory or blockdev\n");
     }
