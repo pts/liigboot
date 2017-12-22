@@ -280,16 +280,17 @@ times 0x2a000-($-$$) db 0
 db VOLUME_LABEL
 ; Rest of the directory entry for the volume label.
 db 8, 0, 0, 0x41, 9, 0x94, 0x4b, 0x94, 0x4b, 0, 0, 0x51, 9, 0x94, 0x4b, 0, 0, 0, 0, 0, 0
-times 0x8000000-($-$$) db 0
+times 0x8000000-($-$$) db 0  ; This is slow (it takes >10 seconds to compile.)
 %endif
 
 %ifdef LIIGBOOT
 db 0xf8, 0xff, 0xff  ; Empty FAT12 FAT.
+
 times 0xac00-($-$$) db 0
 db VOLUME_LABEL
 ; Rest of the directory entry for the volume label.
 db 8, 0, 0, 0x41, 4, 0x90, 0x4b, 0x90, 0x4b, 0, 0, 0x41, 4, 0x90, 0x4b, 0, 0, 0, 0, 0, 0
-times 0x100000-($-$$) db 0  ; This is slow (it takes >10 seconds to compile.)
+times 0x100000-($-$$) db 0
 %endif
 
 %endif  ; EMPTYFS

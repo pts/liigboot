@@ -18,5 +18,11 @@ liigboot.img: liigboot_empty.img external/memtest86+-5.01.kernel syslinux.cfg
 	tools/mtools -c mcopy -i $@.tmp external/memtest86+-5.01.kernel ::memtest.k
 	mv $@.tmp $@
 
+liigboot.img.install: install.c
+	xtiny gcc -W -Wall -Wextra -Werror -o $@ install.c
+
+liigboot.zip: liigboot.img liigboot.img.install mkzip.py
+	python mkzip.py --do-add-install-zip liigboot.img
+
 clean:
-	rm -f liigresc_bs.bin liigboot_bs.bin liigresc_empty.img liigboot_empty.img liigboot.img liigboot.img.tmp
+	rm -f liigresc_bs.bin liigboot_bs.bin liigresc_empty.img liigboot_empty.img liigboot.img liigboot.img.tmp liigboot.img.install liigboot.img.ziptmp liigboot.zip
