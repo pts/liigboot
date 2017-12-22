@@ -1,6 +1,6 @@
 /* by pts@fazekas.hu at Thu Dec 21 23:15:28 CET 2017 */
-#ifdef __XTINY__
-#include <xtiny.h>  /* !! TODO(pts): Compile and link without xtiny. */
+#ifdef __LINTINY__
+#include <lintiny.h>
 #else
 #include <errno.h>
 #include <fcntl.h>
@@ -203,7 +203,11 @@ int main(int argc, char **argv) {
     do_rm = 1;
     ++argv;
   }
-  if (!*argv || 0 != strcmp(*argv, "install")) { usage:
+  /* Performance hack:
+   * ".install" + 1 is better than "install", because `ld -T lintiny.scr'
+   * doesn't do string suffix deduplication.
+   */
+  if (!*argv || 0 != strcmp(*argv, ".install" + 1)) { usage:
     write_err("Tool to install liigboot to Master Boot Record (MBR).\n"
               "See also https://liigboot.github.io/install\n"
               "Usage: ");

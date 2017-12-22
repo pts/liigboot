@@ -19,7 +19,9 @@ liigboot.img: liigboot_empty.img external/memtest86+-5.01.kernel syslinux.cfg
 	mv $@.tmp $@
 
 liigboot.img.install: install.c
-	xtiny gcc -W -Wall -Wextra -Werror -o $@ install.c
+	gcc -m32 -D__LINTINY__ -D__LINTINY_DEFAULTLIBS__ -fno-stack-protector -fomit-frame-pointer -fno-ident -fno-builtin-exit -fno-builtin-_exit -fno-builtin-_Exit -fno-unwind-tables -fno-asynchronous-unwind-tables -isystem lintiny -Os -falign-functions=1 -mpreferred-stack-boundary=2 -falign-jumps=1 -falign-loops=1 -s -static -nostdlib -nostdinc -Wl,--build-id=none -Wl,-T,lintiny/lintiny.scr -W -Wall -Wextra -Werror -o $@ install.c lintiny/liblintiny.a
+#	xtiny gcc -W -Wall -Wextra -Werror -o $@ install.c
+#	gcc -m32 -s -static -nostdlib -nostdinc -Wl,--build-id=none -Wl,-T,lintiny/lintiny.scr -o liigboot.img.install o/install.o o/_start.o o/strcmp.o o/memcmp.o o/strcpy.o
 
 liigboot.img.install.debug: install.c
 	xstatic gcc -g -DDEBUG -W -Wall -Wextra -Werror -o $@ install.c
