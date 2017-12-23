@@ -1,15 +1,3 @@
-## -*- makefile -*- ------------------------------------------------------
-##
-##   Copyright 2001-2008 H. Peter Anvin - All Rights Reserved
-##
-##   This program is free software; you can redistribute it and/or modify
-##   it under the terms of the GNU General Public License as published by
-##   the Free Software Foundation, Inc., 53 Temple Place Ste 330,
-##   Boston MA 02111-1307, USA; either version 2 of the License, or
-##   (at your option) any later version; incorporated herein by reference.
-##
-## -----------------------------------------------------------------------
-
 topdir = ..
 MAKEDIR = $(topdir)/mk
 include $(MAKEDIR)/build.mk
@@ -18,25 +6,11 @@ INCLUDES += -I./include
 CFLAGS += -Wno-unused-local-typedefs
 CFLAGS += -fno-strict-aliasing
 
-LIBOBJS = $(patsubst %.c,%.o,$(wildcard src/*.c))
-LIB     = lzo.a
-BINS    = prepcore
+all: prepcore
 
-all : $(BINS)
-
-$(LIB) : $(LIBOBJS)
-	rm -f $@
-	$(AR) cq $@ $^
-	$(RANLIB) $@
-
-prepcore : prepcore.o $(LIB)
-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+# Don't include $(UMAKEDEPS) here, it's not needed.
+prepcore: prepcore.c src/lzo1x_o.c src/lzo_util.c src/lzo1x_9x.c src/lzo_init.c
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 tidy dist clean spotless:
-	rm -f $(BINS)
-	rm -f *.o *.a .*.d
-	rm -f */*.o */*.a */.*.d
-
-installer:
-
-#-include .*.d */.*.d
+	rm -f prepcore

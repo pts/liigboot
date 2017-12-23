@@ -67,20 +67,6 @@ lzo1x_999_compress_internal(const lzo_bytep in, lzo_uint in_len,
 			    lzo_uint nice_length,
 			    lzo_uint max_chain, lzo_uint32 flags);
 
-LZO_EXTERN(int)
-lzo1y_999_compress_internal(const lzo_bytep in, lzo_uint in_len,
-			    lzo_bytep out, lzo_uintp out_len,
-			    lzo_voidp wrkmem,
-			    const lzo_bytep dict, lzo_uint dict_len,
-			    lzo_callback_p cb,
-			    int try_lazy,
-			    lzo_uint good_length,
-			    lzo_uint max_lazy,
-			    lzo_uint nice_length,
-			    lzo_uint max_chain, lzo_uint32 flags);
-
-#define PARANOID 1
-
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -179,8 +165,6 @@ int main(int argc, char *argv[])
     lzo_uint out_bufsize;
     lzo_uint out_len = 0;
     lzo_uint outfile_len;
-
-    lzo_bytep test;
 
     lzo_byte wrkmem[LZO1X_999_MEM_COMPRESS];
 
@@ -352,31 +336,6 @@ int main(int argc, char *argv[])
     if (fwrite(infile + start, 1, offset - start, f) != offset - start ||
 	fwrite(out, 1, outfile_len, f) != outfile_len || fclose(f))
 	error("write error");
-
-/*
- * Step 12: verify decompression
- */
-#ifdef PARANOID
-    orig_len = in_len * 2;
-    test = xzalloc(orig_len);
-    r = lzo1x_decompress_safe(out, out_len, test, &orig_len, NULL);
-
-    if (r != LZO_E_OK || orig_len != in_len) {
-	/* this should NEVER happen */
-	error("internal error - decompression failed: %d", r);
-    }
-
-    if (memcmp(test, in, in_len)) {
-	/* this should NEVER happen */
-	error("internal error - decompression data error");
-    }
-
-    /* Now you could also verify decompression under similar conditions as in
-     * your application, e.g. overlapping assembler decompression etc.
-     */
-
-    free(test);
-#endif
 
     free(infile);
     free(out);
