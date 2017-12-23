@@ -1,4 +1,6 @@
 *~
+*.o
+.*.o.d
 liigresc_bs.bin
 liigboot_bs.bin
 liigresc_empty.img
@@ -9,3 +11,17 @@ liigboot.img.ziptmp
 liigboot.img.install
 *.bin.good
 liigboot.img.install.debug
+syslinux/core/kwdhash.gen
+syslinux/core/ldlinux.bin
+syslinux/core/ldlinux.bss
+syslinux/core/ldlinux.elf
+syslinux/core/ldlinux.lsr
+syslinux/core/ldlinux.lst
+syslinux/core/ldlinux.map
+syslinux/core/ldlinux.raw
+syslinux/core/ldlinux.sec
+syslinux/core/ldlinux.sys
+syslinux/lzo/lzo.a
+syslinux/version.gen
+syslinux/version.h
+syslinux/version.mk
