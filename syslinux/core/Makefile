@@ -22,7 +22,6 @@ MAKE      += -r
 topdir = ..
 MAKEDIR = $(topdir)/mk
 include $(MAKEDIR)/embedded.mk
--include $(topdir)/version.mk
 
 OPTFLAGS =
 INCLUDES = -I./include -I$(com32)/include
@@ -31,11 +30,6 @@ INCLUDES = -I./include -I$(com32)/include
 # but it's unlikely the characters that are different will be used in
 # filenames by other users.
 CODEPAGE = cp865
-
-# The targets to build in this directory...
-BTARGET  = kwdhash.gen \
-	   ldlinux.bss ldlinux.sys ldlinux.bin \
-	   isolinux.bin isolinux-debug.bin pxelinux.0
 
 # All primary source files for the main syslinux files
 NASMSRC	 := $(wildcard *.asm)
@@ -50,7 +44,7 @@ COBJ	 := $(patsubst %.c,%.o,$(CSRC))
 SOBJ	 := $(patsubst %.S,%.o,$(SSRC))
 
 LIB	 = libcore.a
-LIBS	 = $(LIB) $(com32)/lib/libcomcore.a $(LIBGCC)
+LIBS     = ../prebuilt/libcore.a ../prebuilt/libcomcore.a
 LIBOBJS	 = $(COBJ) $(SOBJ)
 
 NASMDEBUG = -g -F dwarf
@@ -60,17 +54,16 @@ PREPCORE = ../lzo/prepcore
 
 # CFLAGS	+= -DDEBUG=1
 
-# The DATE is set on the make command line when building binaries for
-# official release.  Otherwise, substitute a hex string that is pretty much
-# guaranteed to be unique to be unique from build to build.
 ifndef HEXDATE
-HEXDATE := $(shell $(PERL) ../now.pl $(SRCS))
+# core/ldlinux.bss: 0x7d2f: dd LDLINUX_MAGIC^HEXDATE
+# LDLINUX_MAGIC equ 0x3EB202FE
+# syslinux-4.07/core/ldlinux.bss: LDLINUX_MAGIC^HEXDATE == 0x6f42f3a1  ; HEXDATE := 0x51f0f15f
+# our ldlinux.bss:                LDLINUX_MAGIC^HEXDATE == 0x6498f3f7  ; HEXDATE := 0x5a2af109
+HEXDATE := 0x5a2af109
 endif
-ifndef DATE
-DATE    := $(shell sh ../gen-id.sh $(VERSION) $(HEXDATE))
-endif
+DATE := $(HEXDATE)
 
-all: $(BTARGET)
+all: ldlinux.bin
 
 kwdhash.gen: keywords genhash.pl
 	$(PERL) genhash.pl < keywords > kwdhash.gen
@@ -78,36 +71,36 @@ kwdhash.gen: keywords genhash.pl
 .PRECIOUS: %.elf
 
 %.raw: %.elf
-	$(OBJCOPY) -O binary $< $(@:.bin=.raw)
+	$(OBJCOPY) -O binary $< $@
 
 # GNU make 3.82 gets confused by the first form
 .PRECIOUS: %.raw
 
+# Don't remove this temporary build artifact (%.o).
+.PRECIOUS: %.o
+
 %.bin: %.raw $(PREPCORE)
 	$(PREPCORE) $< $@
 
-%.o: %.asm kwdhash.gen ../version.gen
+%.o %.lsr: %.asm kwdhash.gen ../version.gen $(NASMHDR)
 	$(NASM) -f elf $(NASMOPT) -DDATE_STR="'$(DATE)'" \
 		-DHEXDATE="$(HEXDATE)" \
-		-l $(@:.o=.lsr) -o $@ -MP -MD .$@.d $<
+		-l $(<:.asm=.lsr) -o $(<:.asm=.o) -MP -MD .$(<:.asm=.o).d $<
 
-%.elf: %.o $(LIBS) syslinux.ld
-	$(LD) $(LDFLAGS) -T syslinux.ld -M -o $@ $< \
+%.elf %.lst %.map %.sec: %.o %.lsr $(LIBS) syslinux.ld
+	$(LD) $(LDFLAGS) -T syslinux.ld -M -o $(<:.o=.elf) $< \
 		--start-group $(LIBS) --end-group \
-		> $(@:.elf=.map)
-	$(OBJDUMP) -h $@ > $(@:.elf=.sec)
-	$(PERL) lstadjust.pl $(@:.elf=.lsr) $(@:.elf=.sec) $(@:.elf=.lst)
+		> $(<:.o=.map)
+	$(OBJDUMP) -h $(<:.o=.elf) > $(@:.elf=.sec)
+	$(PERL) lstadjust.pl $(<:.o=.lsr) $(<:.o=.sec) $(<:.o=.lst)
 
-$(LIB): $(LIBOBJS)
-	rm -f $@
-	$(AR) cq $@ $^
-	$(RANLIB) $@
+#$(LIB): $(LIBOBJS)
+#	rm -f $@
+#	$(AR) cq $@ $^
+#	$(RANLIB) $@
 
-pxelinux.0: pxelinux.bin
-	cp -f $< $@
-
-ldlinux.bss: ldlinux.bin
-	dd if=$< of=$@ bs=512 count=1
+ldlinux.bss: ldlinux.raw
+	dd if=$< of=$@ bs=512 count=1 skip=62  # 0x7c00
 
 ldlinux.sys: ldlinux.bin
 	dd if=$< of=$@ bs=512 skip=2
@@ -117,25 +110,8 @@ codepage.cp: ../codepage/$(CODEPAGE).cp
 
 codepage.o: codepage.S codepage.cp
 
-install: installer
-
-install-lib: installer
-
-install-all: install install-lib
-
-netinstall: installer
-
-tidy dist:
-	rm -f codepage.cp *.o *.elf *.a stupid.* patch.offset .depend .*.d
-	rm -f *.elf.tmp *.sym
-	rm -f *.lsr *.lst *.map *.sec *.raw
-	rm -f */*.o */*/*.o */*.lst */*/*.lst */.*.d */*/.*.d
-	rm -f $(OBSOLETE) $(LIB)
-
-clean: tidy
-
-spotless: clean
-	rm -f $(BTARGET) *.bin *_bin.c
-
 # Include dependencies file
--include .*.d */.*.d */*/.*.d
+#-include .*.d */.*.d */*/.*.d
+
+clean:
+	rm -f ldlinux.o ldlinux.elf ldlinux.lst ldlinux.lsr ldlinux.raw ldlinux.map ldlinux.sec ldlinux.bss ldlinux.bin ldlinux.sys .*.d

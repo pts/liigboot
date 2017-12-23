@@ -15,6 +15,8 @@ MAKEDIR = $(topdir)/mk
 include $(MAKEDIR)/build.mk
 
 INCLUDES += -I./include
+CFLAGS += -Wno-unused-local-typedefs
+CFLAGS += -fno-strict-aliasing
 
 LIBOBJS = $(patsubst %.c,%.o,$(wildcard src/*.c))
 LIB     = lzo.a
@@ -37,4 +39,4 @@ tidy dist clean spotless:
 
 installer:
 
--include .*.d */.*.d
+#-include .*.d */.*.d
