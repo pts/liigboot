@@ -69,6 +69,7 @@ db 'SYSLINUX'  ; OEM ID.
 ;
 dw 512   ; Sector size in bytes.
 db 4     ; Sectors per cluster.
+; !! Make the number of Syslinux reserved sectors even less. Both locations.
 dw 80    ; Number of reserved sectors.
 db 1     ; Number of FATs.
 dw 512   ; Number of root directory entries.
@@ -228,9 +229,9 @@ times 0x1b8-16-($-$$) db 0
 ; Disk Address Packet, for reading ldlinux.sys from disk. 16 bytes.
 dap:
 dw 0x10
-dw 80 - 1  ; Number of sectors to load.
-dw 0, 0x880  ; segment:offset of 0x8800
-dq 1  ; Read from sector 1 (0x200), that's where 0x8800 of ldlinux.bin starts.
+dw 80 - 2  ; Number of sectors to load.
+dw 0, 0x880  ; segment:offset of 0x8800, that's where ldlinux.bin is loaded to.
+dq 2  ; Read from sector 2 (0x400), that's where ldlinux.bin starts.
 
 ; UUIDs and the parition table of a modern standard Master Boot Record (MBR).
 ; https://en.wikipedia.org/wiki/Master_boot_record
@@ -264,9 +265,10 @@ times 0x200-($-$$) db 0  ; Doesn't add any additional bytes.
 
 %ifdef EMPTYFS
 
-times 0x200-($-$$) db 0
-;!!make a newcopy: incbin "syslinux_liigboot.ldlinux.sys"
-incbin "syslinux/core/ldlinux.bin", 0xc00
+; 1 sector (0x200...0x400) here is reserved for Syslinux ADV.
+times 0x400-($-$$) db 0
+; TODO(pts): Make a copy of syslinux/core/ldlinux.bin for reproducible builds.
+incbin "syslinux/core/ldlinux.bin"
 times 0xa000-($-$$) db 0
 
 %ifdef LIIGRESC

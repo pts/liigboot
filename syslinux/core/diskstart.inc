@@ -17,7 +17,6 @@
 ; Common early-bootstrap code for harddisk-based Syslinux derivatives.
 ;
 
-_start equ 0x7c00
 bootsec equ 0x7c00
 superblock equ 0x7c0b
 superblock_len_fat16 equ 0x33
@@ -30,6 +29,7 @@ MaxLMA equ (96<<10) + 0x8000  ; 0x20000
 		section .init
 
 		zb 0x8800-0x7c00-($-$$)
+_start:  ; 0x8800
 
 ; This must start at the beginning.
 ADVSec0		dd 0			; Not specified
