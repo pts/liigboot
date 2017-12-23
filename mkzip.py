@@ -22,6 +22,11 @@ def main(argv):
   if len(argv) > 1 and argv[1] == '--do-add-install-zip':
     do_add_install_zip = True
     del argv[1]
+  if len(argv) > 1 and argv[1].startswith('--mtime='):
+    mtime = time.gmtime(int(argv[1][argv[1].find('=') + 1:], 0))
+    del argv[1]
+  else:
+    mtime = time.localtime()[:6]
   if len(argv) < 2:
     img_file_name = 'liigboot.img'
   else:
@@ -62,14 +67,12 @@ def main(argv):
   finally:
     f.close()
 
-  time_now = time.localtime()[:6]
-
   ziptmp_file_name = img_file_name + '.ziptmp'
   zf = zipfile.ZipFile(ziptmp_file_name, 'w', zipfile.ZIP_DEFLATED)
   try:
-    zf.writestr(new_zipinfo('__main__.py', time_now), main_py_code)
-    zf.writestr(new_zipinfo(zip_output_base_name + '.install', time_now, 0755), install_data)
-    zf.writestr(new_zipinfo('README.txt', time_now), README_data)
+    zf.writestr(new_zipinfo('__main__.py', mtime), main_py_code)
+    zf.writestr(new_zipinfo(zip_output_base_name + '.install', mtime, 0755), install_data)
+    zf.writestr(new_zipinfo('README.txt', mtime), README_data)
   finally:
     zf.close()
 
@@ -110,13 +113,20 @@ def main(argv):
     if data[i : i + len(new)].rstrip('\0'):
       raise ValueError('Last few FAT12 entries already occupied.')
     data = data[:i] + new + data[i + len(new):]
+    # https://www.win.tue.nl/~aeb/linux/fs/fat/fat-1.html
+    #
     # Byte 12 in the directory entry can have two bits set in VFAT to indicate all lower case:
     # #define LCASE_BASE        0x08            // filename base in lower case
     # #define LCASE_EXT         0x10            // filename extension in lower case
     #
     # A direntry is 32 bytes.
-    direntry_new = 'INSTALL ZIP\x20\x18\0\xf8\xbd\x95\x4b\x95\x4b\0\0\xf8\xbd\x95\x4b' + struct.pack(
-        '<HL', direntry_start_cluster, direntry_file_size)
+    # TODO(pts): Preserve modification time.
+    if mtime[0] < 1980:
+      raise ValueError(mtime)
+    direntry_new = 'INSTALL ZIP\x20\x18\0\xf8\xbd\x95\x4b\x95\x4b\0\0' + struct.pack(
+        '<LHL',
+        mtime[3] << 11 | mtime[4] << 5 | mtime[5] >> 1 | (mtime[0] - 1980) << 25 | mtime[1] << 21 | mtime[2] << 16,
+        direntry_start_cluster, direntry_file_size)
     for i in xrange(0xac00, 0xb000, 32):  # 1024 bytes of FAT root directory.
       direntry = data[i : i + 32]
       if direntry[0] in '\xe5\0':  # '\xe5' marks deleted.

@@ -52,16 +52,15 @@ NASMOPT  += $(NASMDEBUG)
 
 PREPCORE = ../lzo/prepcore
 
-# CFLAGS	+= -DDEBUG=1
-
-ifndef HEXDATE
 # core/ldlinux.bss: 0x7d2f: dd LDLINUX_MAGIC^HEXDATE
 # LDLINUX_MAGIC equ 0x3EB202FE
 # syslinux-4.07/core/ldlinux.bss: LDLINUX_MAGIC^HEXDATE == 0x6f42f3a1  ; HEXDATE := 0x51f0f15f
 # our ldlinux.bss:                LDLINUX_MAGIC^HEXDATE == 0x6498f3f7  ; HEXDATE := 0x5a2af109
-HEXDATE := 0x5a2af109
+ifeq ($(HEXDATE),)
+HEXDATE2 := 0x5a2af109
+else
+HEXDATE2 := $(HEXDATE)
 endif
-DATE := $(HEXDATE)
 
 all: ldlinux.bin
 
@@ -83,8 +82,8 @@ kwdhash.gen: keywords genhash.pl
 	$(PREPCORE) $< $@
 
 %.o %.lsr: %.asm kwdhash.gen ../version.gen $(NASMHDR)
-	$(NASM) -f elf $(NASMOPT) -DDATE_STR="'$(DATE)'" \
-		-DHEXDATE="$(HEXDATE)" \
+	$(NASM) -f elf $(NASMOPT) -DDATE_STR="'$(HEXDATE2)'" \
+		-DHEXDATE="$(HEXDATE2)" \
 		-l $(<:.asm=.lsr) -o $(<:.asm=.o) -MP -MD .$(<:.asm=.o).d $<
 
 %.elf %.lst %.map %.sec: %.o %.lsr $(LIBS) syslinux.ld

@@ -1,5 +1,15 @@
 .PHONY: all clean
 
+ifeq ($(HEXDATE),)
+# Unix timestamp corresponding to `Fri Dec  8 20:07:37 GMT 2017'.
+# Also 1512763657.
+# Can be overridden in the command-line.
+# !! Bump this when released.
+HEXDATE2 := 0x5a2af109
+else
+HEXDATE2 := $(HEXDATE)
+endif
+
 all: liigresc_bs.bin liigboot_bs.bin
 
 liigresc_bs.bin: liigboot_boot.nasm
@@ -14,8 +24,13 @@ liigboot_empty.img: liigboot_boot.nasm syslinux/core/ldlinux.bin
 
 liigboot.img: liigboot_empty.img external/memtest86+-5.01.kernel syslinux.cfg
 	cp -a liigboot_empty.img $@.tmp
-	tools/mtools -c mcopy -i $@.tmp syslinux.cfg ::
-	tools/mtools -c mcopy -i $@.tmp external/memtest86+-5.01.kernel ::memtest.k
+	cp -a syslinux.cfg mcopy.tmp
+	python -c 'import os, sys; mtime = int(sys.argv[1], 0); os.utime(sys.argv[2], (mtime, mtime))' $(HEXDATE2) mcopy.tmp
+	tools/mtools -c mcopy -m -i $@.tmp mcopy.tmp ::syslinux.cfg
+	cp -a external/memtest86+-5.01.kernel mcopy.tmp
+	python -c 'import os, sys; mtime = int(sys.argv[1], 0); os.utime(sys.argv[2], (mtime, mtime))' $(HEXDATE2) mcopy.tmp
+	tools/mtools -c mcopy -m -i $@.tmp mcopy.tmp ::memtest.k
+	rm -f mcopy.tmp
 	mv $@.tmp $@
 
 liigboot.img.install: install.c
@@ -27,16 +42,16 @@ liigboot.img.install.debug: install.c
 	xstatic gcc -g -DDEBUG -W -Wall -Wextra -Werror -o $@ install.c
 
 liigboot.zip: liigboot.img liigboot.img.install mkzip.py
-	python mkzip.py --do-add-install-zip liigboot.img
+	python mkzip.py --do-add-install-zip --mtime=$(HEXDATE2) liigboot.img
 
 # All dependencies are listed here.
 LDLINUX_BIN_TARGETS = core/ldlinux.bin core/ldlinux.raw core/ldlinux.elf core/ldlinux.lsr core/ldlinux.lst core/ldlinux.map core/ldlinux.o core/ldlinux.sec
 $(addprefix syslinux/,$(LDLINUX_BIN_TARGETS)):  syslinux/prebuilt/libcomcore.a syslinux/prebuilt/libcore.a syslinux/core/syslinux.ld syslinux/core/ldlinux.asm $(wildcard syslinux/core/*.inc)
-	$(MAKE) -C syslinux $(LDLINUX_BIN_TARGETS)
+	$(MAKE) -C syslinux $(LDLINUX_BIN_TARGETS) HEXDATE=$(HEXDATE2)
 SYSLINUX_VERSION_TARGETS = version.gen version.h version.mk
 $(addprefux syslinux/,$(SYSLINUX_VERSION_TARGETS)): syslinux/version syslinux/version.pl
 	$(MAKE) -C syslinux $(SYSLINUX_VERSION_TARGETS)
 
 clean:
-	rm -f liigresc_bs.bin liigboot_bs.bin liigresc_empty.img liigboot_empty.img liigboot.img liigboot.img.tmp liigboot.img.install liigboot.img.ziptmp liigboot.zip
+	rm -f liigresc_bs.bin liigboot_bs.bin liigresc_empty.img liigboot_empty.img liigboot.img liigboot.img.tmp liigboot.img.install liigboot.img.ziptmp liigboot.zip mcopy.tmp
 	$(MAKE) -C syslinux clean

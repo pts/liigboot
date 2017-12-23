@@ -14,6 +14,13 @@ MAKEDIR = $(topdir)/mk
 include $(MAKEDIR)/syslinux.mk
 #-include $(topdir)/version.mk
 
+ifeq ($(HEXDATE),)
+HEXDATE2 := 0x5a2af109
+else
+HEXDATE2 := $(HEXDATE)
+endif
+#export HEXDATE  # Doesn't show it explicily.
+
 .PHONY: all clean
 
 all: version.gen version.h version.mk core/ldlinux.raw core/ldlinux.bin
@@ -21,7 +28,7 @@ all: version.gen version.h version.mk core/ldlinux.raw core/ldlinux.bin
 # All dependencies are listed here.
 LDLINUX_RAW_TARGETS = core/ldlinux.raw core/ldlinux.elf core/ldlinux.lsr core/ldlinux.lst core/ldlinux.map core/ldlinux.o core/ldlinux.sec
 $(LDLINUX_RAW_TARGETS): version.gen version.h version.mk prebuilt/libcomcore.a prebuilt/libcore.a core/syslinux.ld core/ldlinux.asm $(wildcard core/*.inc)
-	$(MAKE) -C core $(notdir $(LDLINUX_RAW_TARGETS))
+	$(MAKE) -C core $(notdir $(LDLINUX_RAW_TARGETS)) HEXDATE=$(HEXDATE2)
 core/ldlinux.bin: core/ldlinux.raw lzo/prepcore
 	$(MAKE) -C core $(notdir $@)
 lzo/prepcore: lzo/prepcore.c lzo/src/*.[ch] lzo/src/*.ch lzo/include/lzo/*.h
