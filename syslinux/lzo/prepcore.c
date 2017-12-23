@@ -52,8 +52,7 @@
    http://www.oberhumer.com/opensource/lzo/
  */
 
-#include "lzo/lzoconf.h"
-#include "lzo/lzo1x.h"
+#include "prepcore_lzo.h"
 
 LZO_EXTERN(int)
 lzo1x_999_compress_internal(const lzo_bytep in, lzo_uint in_len,

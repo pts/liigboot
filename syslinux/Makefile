@@ -31,7 +31,7 @@ $(LDLINUX_RAW_TARGETS): version.gen version.h version.mk prebuilt/libcomcore.a p
 	$(MAKE) -C core $(notdir $(LDLINUX_RAW_TARGETS)) HEXDATE=$(HEXDATE2)
 core/ldlinux.bin: core/ldlinux.raw lzo/prepcore
 	$(MAKE) -C core $(notdir $@)
-lzo/prepcore: lzo/prepcore.c lzo/src/*.[ch] lzo/src/*.ch lzo/include/lzo/*.h
+lzo/prepcore: lzo/prepcore.c lzo/prepcore_lzo.c lzo/prepcore_lzo.h lzo/prepcore_lzo_miniacc.h
 	$(MAKE) -C lzo $(notdir $@)
 
 version.gen: version version.pl
