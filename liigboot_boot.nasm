@@ -17,7 +17,7 @@
 ; boot sector containing:
 ;
 ; * a BIOS MBR partition table with 1 entry
-; * bootloader code to load ldlinux.sys from Syslinux 4.06, 39 KiB starting
+; * bootloader code to load ldlinux.sys from Syslinux 4.07, 39 KiB starting
 ;   at sector 2 (byte offset 1024)
 ; * filesystem headers of a FAT12 or FAT16 filesystem (BIOS parameter block)
 ;
