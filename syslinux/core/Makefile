@@ -99,12 +99,6 @@ kwdhash.gen: keywords genhash.pl
 #	$(AR) cq $@ $^
 #	$(RANLIB) $@
 
-ldlinux.bss: ldlinux.raw
-	dd if=$< of=$@ bs=512 count=1 skip=62  # 0x7c00
-
-ldlinux.sys: ldlinux.bin
-	dd if=$< of=$@ bs=512 skip=2
-
 codepage.cp: ../codepage/$(CODEPAGE).cp
 	cp -f $< $@
 
@@ -114,4 +108,4 @@ codepage.o: codepage.S codepage.cp
 #-include .*.d */.*.d */*/.*.d
 
 clean:
-	rm -f ldlinux.o ldlinux.elf ldlinux.lst ldlinux.lsr ldlinux.raw ldlinux.map ldlinux.sec ldlinux.bss ldlinux.bin ldlinux.sys .*.d
+	rm -f ldlinux.o ldlinux.elf ldlinux.lst ldlinux.lsr ldlinux.raw ldlinux.map ldlinux.sec ldlinux.bin .*.d

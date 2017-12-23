@@ -64,19 +64,16 @@ adv1:
 		; the intended location of the ADV
 		;
 adv_init:
-		cmp byte [ADVDrive],-1
-		jne adv_read
+		;cmp byte [ADVDrive],-1
+		;jne adv_read
 
 %if IS_SYSLINUX || IS_EXTLINUX
-		cmp word [ADVSectors],2		; Not present?
-		jb adv_verify
-
-		mov eax,[Hidden]
-		mov edx,[Hidden+4]
+		mov edx, [ADVSec0]
+		test edx, edx
+		jz adv_verify.reset  ; No ADV if ADVSec0 is 0.
+		mov eax,[Hidden]  ; ignore high 4 bytes of Hidden
 		add [ADVSec0],eax
-		adc [ADVSec0+4],edx
 		add [ADVSec1],eax
-		adc [ADVSec1+4],edx
 		mov al,[DriveNumber]
 		mov [ADVDrive],al
 		jmp adv_read
@@ -340,20 +337,7 @@ adv_read_write:
 		mov [ADVOp],ah
 		pushad
 
-		; Check for EDD
-		mov bx,55AAh
-		mov ah,41h			; EDD existence query
-		mov dl,[ADVDrive]
-		int 13h
-		mov si,.cbios
-		jc .noedd
-		cmp bx,0AA55h
-		jne .noedd
-		test cl,1
-		jz .noedd
 		mov si,.ebios
-.noedd:
-
 		mov eax,[ADVSec0]
 		mov edx,[ADVSec0+4]
 		mov bx,adv0
@@ -402,106 +386,8 @@ adv_read_write:
 		pop si
 		ret
 
-.cbios:
-		push edx
-		push eax
-		push bp
-
-		and edx,edx			; > 2 TiB not possible
-		jnz .cb_overflow
-
-		mov dl,[ADVDrive]
-		and dl,dl
-		; Floppies: can't trust INT 13h 08h, we better know
-		; the geometry a priori, which means it better be our
-		; boot device...
-		jns .noparm			; Floppy drive... urk
-
-		mov ah,08h			; Get disk parameters
-		int 13h
-		jc .noparm
-		and ah,ah
-		jnz .noparm
-		shr dx,8
-		inc dx
-		movzx edi,dx			; EDI = heads
-		and cx,3fh
-		movzx esi,cx			; ESI = sectors/track
-		jmp .parmok
-
-.noparm:
-		; No CHS info... this better be our boot drive, then
-%if IS_SYSLINUX || IS_EXTLINUX
-		cmp dl,[DriveNumber]
-		jne .cb_overflow		; Fatal error!
-		movzx esi,word [bsSecPerTrack]
-		movzx edi,word [bsHeads]
-%else
-		; Not a disk-based derivative... there is no hope
-		jmp .cb_overflow
-%endif
-
-.parmok:
-                ;
-                ; Dividing by sectors to get (track,sector): we may have
-                ; up to 2^18 tracks, so we need to use 32-bit arithmetric.
-                ;
-		xor edx,edx
-                div esi
-                xor cx,cx
-                xchg cx,dx              ; CX <- sector index (0-based)
-                                        ; EDX <- 0
-                ; eax = track #
-                div edi                 ; Convert track to head/cyl
-
-		; Watch out for overflow, we might be writing!
-		cmp eax,1023
-                ja .cb_overflow
-
-                ;
-                ; Now we have AX = cyl, DX = head, CX = sector (0-based),
-                ; BP = sectors to transfer, SI = bsSecPerTrack,
-                ; ES:BX = data target
-                ;
-
-                shl ah,6                ; Because IBM was STOOPID
-                                        ; and thought 8 bits were enough
-                                        ; then thought 10 bits were enough...
-                inc cx                  ; Sector numbers are 1-based, sigh
-                or cl,ah
-                mov ch,al
-                mov dh,dl
-                mov dl,[ADVDrive]
-		mov al,01h		; Transfer one sector
-                mov ah,[ADVOp]		; Operation
-
-		mov bp,adv_retries
-.cb_retry:
-                pushad
-                int 13h
-                popad
-                jc .cb_error
-
-.cb_done:
-                pop bp
-                pop eax
-                pop edx
-		pop si
-                ret
-
-.cb_error:
-                dec bp
-                jnz .cb_retry
-.cb_overflow:
-		stc
-		jmp .cb_done
-
-		section .data16
-		alignz 8
-ADVSec0		dq 0			; Not specified
-ADVSec1		dq 0			; Not specified
+;		section .data16
 ADVDrive	db -1			; No ADV defined
-ADVCHSInfo	db -1			; We have CHS info for this drive
 
 		section .bss16
 ADVOp		resb 1

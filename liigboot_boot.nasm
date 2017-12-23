@@ -215,9 +215,8 @@ int 0x10
 ;mov ebp, 0x8c00
 
 ; TODO(pts): Do these addresses change if we relink ldlinux.sys?
-mov [0x80f5], al  ; Use LBA mode (getlinsec_ebios).
 sti
-jmp 0:0x8970  ; all_read, the entry point of syslinux_liigboot.ldlinux.sys (Syslinux 4.07).
+jmp 0:0x88b0  ; all_read, the entry point of syslinux_liigboot.ldlinux.sys (Syslinux 4.07).
 
 ; We have 40 bytes free for new code, but we don't need it.
 ; The region 0xda ... 0xe0 is reserved for the modern standard MBR.
@@ -229,9 +228,9 @@ times 0x1b8-16-($-$$) db 0
 ; Disk Address Packet, for reading ldlinux.sys from disk. 16 bytes.
 dap:
 dw 0x10
-dw 80 - 2  ; Number of sectors to load.
-dw 0, 0x800  ; segment:offset of 0x8000
-dq 2  ; Read from sector 2 (0x400), that's where ldlinux.sys starts.
+dw 80 - 1  ; Number of sectors to load.
+dw 0, 0x880  ; segment:offset of 0x8800
+dq 1  ; Read from sector 1 (0x200), that's where 0x8800 of ldlinux.bin starts.
 
 ; UUIDs and the parition table of a modern standard Master Boot Record (MBR).
 ; https://en.wikipedia.org/wiki/Master_boot_record
@@ -265,13 +264,9 @@ times 0x200-($-$$) db 0  ; Doesn't add any additional bytes.
 
 %ifdef EMPTYFS
 
-times 0x400-($-$$) db 0
-; $ cmp -l syslinux_liigboot.ldlinux.sys syslinux-4.07.ldlinux.sys
-; at 0x8028: CheckSum dd ...
-; at 0x81ee: SectorPtrs dq 3; dw 70  ; Instructs the loader to load 70 * 512 bytes from 0x600 on disk to 0x8600 in memory. ldlinux.sys is 71 * 512 bytes from 0x400 on disk.
-; at 0xb798: ADVSec0 dq 74 (sector number relative the partition, += Hidden) 
-; at 0xb7a0: ADVSec1 dq 75 (ADVSec0 + 1)
-incbin "syslinux_liigboot.ldlinux.sys"
+times 0x200-($-$$) db 0
+;!!make a newcopy: incbin "syslinux_liigboot.ldlinux.sys"
+incbin "syslinux/core/ldlinux.bin", 0xc00
 times 0xa000-($-$$) db 0
 
 %ifdef LIIGRESC

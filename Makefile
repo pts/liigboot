@@ -7,9 +7,9 @@ liigresc_bs.bin: liigboot_boot.nasm
 liigboot_bs.bin: liigboot_boot.nasm
 	nasm -f bin -o $@ -DLIIGBOOT liigboot_boot.nasm
 
-liigresc_empty.img: liigboot_boot.nasm syslinux_liigboot.ldlinux.sys
+liigresc_empty.img: liigboot_boot.nasm syslinux/core/ldlinux.bin
 	nasm -f bin -o $@ -DLIIGRESC -DEMPTYFS liigboot_boot.nasm
-liigboot_empty.img: liigboot_boot.nasm syslinux_liigboot.ldlinux.sys
+liigboot_empty.img: liigboot_boot.nasm syslinux/core/ldlinux.bin
 	nasm -f bin -o $@ -DLIIGBOOT -DEMPTYFS liigboot_boot.nasm
 
 liigboot.img: liigboot_empty.img external/memtest86+-5.01.kernel syslinux.cfg
@@ -30,9 +30,9 @@ liigboot.zip: liigboot.img liigboot.img.install mkzip.py
 	python mkzip.py --do-add-install-zip liigboot.img
 
 # This doesn't list all the dependencies. So running
-# `make syslinux/core/ldlinux.sys' again won't update it.
-syslinux/core/ldlinux.sys:
-	$(MAKE) -C syslinux core/ldlinux.sys
+# `make syslinux/core/ldlinux.bin' again won't update it.
+syslinux/core/ldlinux.bin:
+	$(MAKE) -C syslinux core/ldlinux.bin
 
 clean:
 	rm -f liigresc_bs.bin liigboot_bs.bin liigresc_empty.img liigboot_empty.img liigboot.img liigboot.img.tmp liigboot.img.install liigboot.img.ziptmp liigboot.zip

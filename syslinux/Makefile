@@ -16,22 +16,13 @@ include $(MAKEDIR)/syslinux.mk
 
 .PHONY: all clean
 
-all: version.gen version.h version.mk core/ldlinux.raw core/ldlinux.bss core/ldlinux.bin core/ldlinux.sys
-	cmp core/ldlinux.raw.orig core/ldlinux.raw
-	test \! -f core/ldlinux.bss.orig || cmp core/ldlinux.bss.orig core/ldlinux.bss
-	cmp core/ldlinux.bin.orig core/ldlinux.bin
-	test \! -f core/ldlinux.sys.orig || cmp core/ldlinux.sys.orig core/ldlinux.sys
-	: Compare OK.
+all: version.gen version.h version.mk core/ldlinux.raw core/ldlinux.bin
 
 # All dependencies are listed here.
 LDLINUX_RAW_TARGETS = core/ldlinux.raw core/ldlinux.elf core/ldlinux.lsr core/ldlinux.lst core/ldlinux.map core/ldlinux.o core/ldlinux.sec
 $(LDLINUX_RAW_TARGETS): version.gen version.h version.mk prebuilt/libcomcore.a prebuilt/libcore.a core/syslinux.ld core/ldlinux.asm $(wildcard core/*.inc)
 	$(MAKE) -C core $(notdir $(LDLINUX_RAW_TARGETS))
-core/ldlinux.bss: core/ldlinux.raw
-	$(MAKE) -C core $(notdir $@)
 core/ldlinux.bin: core/ldlinux.raw lzo/prepcore
-	$(MAKE) -C core $(notdir $@)
-core/ldlinux.sys: core/ldlinux.bin
 	$(MAKE) -C core $(notdir $@)
 lzo/prepcore: lzo/prepcore.c lzo/src/*.[ch] lzo/src/*.ch lzo/include/lzo/*.h
 	$(MAKE) -C lzo $(notdir $@)
