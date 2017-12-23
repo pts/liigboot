@@ -29,10 +29,13 @@ liigboot.img.install.debug: install.c
 liigboot.zip: liigboot.img liigboot.img.install mkzip.py
 	python mkzip.py --do-add-install-zip liigboot.img
 
-# This doesn't list all the dependencies. So running
-# `make syslinux/core/ldlinux.bin' again won't update it.
-syslinux/core/ldlinux.bin:
-	$(MAKE) -C syslinux core/ldlinux.bin
+# All dependencies are listed here.
+LDLINUX_BIN_TARGETS = core/ldlinux.bin core/ldlinux.raw core/ldlinux.elf core/ldlinux.lsr core/ldlinux.lst core/ldlinux.map core/ldlinux.o core/ldlinux.sec
+$(addprefix syslinux/,$(LDLINUX_BIN_TARGETS)):  syslinux/prebuilt/libcomcore.a syslinux/prebuilt/libcore.a syslinux/core/syslinux.ld syslinux/core/ldlinux.asm $(wildcard syslinux/core/*.inc)
+	$(MAKE) -C syslinux $(LDLINUX_BIN_TARGETS)
+SYSLINUX_VERSION_TARGETS = version.gen version.h version.mk
+$(addprefux syslinux/,$(SYSLINUX_VERSION_TARGETS)): syslinux/version syslinux/version.pl
+	$(MAKE) -C syslinux $(SYSLINUX_VERSION_TARGETS)
 
 clean:
 	rm -f liigresc_bs.bin liigboot_bs.bin liigresc_empty.img liigboot_empty.img liigboot.img liigboot.img.tmp liigboot.img.install liigboot.img.ziptmp liigboot.zip
