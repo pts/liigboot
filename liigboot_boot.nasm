@@ -268,6 +268,9 @@ times 0x200-($-$$) db 0  ; Doesn't add any additional bytes.
 ; 1 sector (0x200...0x400) here is reserved for Syslinux ADV.
 times 0x400-($-$$) db 0
 ; TODO(pts): Make a copy of syslinux/core/ldlinux.bin for reproducible builds.
+;            prebuilt/ldlinux.bin
+;            prebuilt/libcomcore.a
+;            prebuilt/libcore.a
 incbin "syslinux/core/ldlinux.bin"
 times 0xa000-($-$$) db 0
 
