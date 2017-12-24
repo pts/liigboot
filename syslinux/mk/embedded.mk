@@ -49,7 +49,8 @@ SFLAGS    += $(CFLAGS) -D__ASSEMBLY__
 	$(CC) $(MAKEDEPS) $(CFLAGS) -E -o $@ $<
 %.s: %.c
 	$(CC) $(MAKEDEPS) $(CFLAGS) -S -o $@ $<
+# -Wa,-a=$*.lst
 %.o: %.S
-	$(CC) $(MAKEDEPS) $(SFLAGS) -Wa,-a=$*.lst -c -o $@ $<
+	$(CC) $(MAKEDEPS) $(SFLAGS) -c -o $@ $<
 %.s: %.S
 	$(CC) $(MAKEDEPS) $(SFLAGS) -E -o $@ $<
