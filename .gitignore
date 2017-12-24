@@ -9,8 +9,8 @@ liigboot.img
 liigboot.zip
 liigboot.img.ziptmp
 liigboot.img.install
-*.bin.good
 liigboot.img.install.debug
+*.bin.good
 syslinux/core/kwdhash.gen
 syslinux/core/ldlinux.bin
 syslinux/core/ldlinux.bss
@@ -21,9 +21,11 @@ syslinux/core/ldlinux.map
 syslinux/core/ldlinux.raw
 syslinux/core/ldlinux.sec
 syslinux/core/ldlinux.sys
-syslinux/lzo/lzo.a
 syslinux/version.gen
 syslinux/version.h
 syslinux/version.mk
 syslinux/libcomcore/libcomcore.a
 syslinux/libcore/libcore.a
+liigboot.zip.good
+/sdb.*
+my.img
