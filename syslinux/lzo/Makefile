@@ -7,7 +7,7 @@ CFLAGS += -fno-strict-aliasing
 
 all: prepcore
 
-# Don't include $(UMAKEDEPS) here, it's not needed.
+# Don't include $(MAKEDEPS) or $(UMAKEDEPS) here, it's not needed.
 prepcore: prepcore.c prepcore_lzo.c prepcore_lzo.h prepcore_lzo_miniacc.h
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ prepcore.c prepcore_lzo.c $(LIBS)
 
