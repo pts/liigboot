@@ -44,7 +44,7 @@ COBJ	 := $(patsubst %.c,%.o,$(CSRC))
 SOBJ	 := $(patsubst %.S,%.o,$(SSRC))
 
 LIB	 = libcore.a
-LIBS     = ../prebuilt/libcore.a ../libcomcore/libcomcore.a
+LIBS     = ../libcore/libcore.a ../libcomcore/libcomcore.a
 LIBOBJS	 = $(COBJ) $(SOBJ)
 
 NASMDEBUG = -g -F dwarf

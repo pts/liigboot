@@ -5,7 +5,7 @@ topdir = ..
 MAKEDIR = $(topdir)/mk
 include $(MAKEDIR)/lib.mk
 
-LIBCOREOBJS =   \
+LIBCOMCOREOBJS = \
     memcpy.o mempcpy.o memset.o memcmp.o memmove.o                  \
     strlen.o stpcpy.o strcpy.o strcmp.o strlcpy.o strlcat.o         \
     strchr.o strncmp.o strncpy.o                                    \
@@ -20,16 +20,18 @@ LIBCOREOBJS =   \
 
 HEADERS := $(wildcard include/*.h include/bitsize/*.h include/klibc/*.h include/sys/*.h)
 
+all: libcomcore.a
+
 # Don't include $(MAKEDEPS) or $(UMAKEDEPS) here, it's not needed.
 %.o: %.c $(HEADERS)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-libcomcore.a: $(LIBCOREOBJS)
+libcomcore.a: $(LIBCOMCOREOBJS)
 	rm -f $@
 	$(AR) cq $@ $^
 	$(RANLIB) $@  
 
 clean:
-	rm -f libcomcore.a $(LIBCOREOBJS) .*.o.d sys/.*.o.d libgcc/.*.o.d
+	rm -f libcomcore.a $(LIBCOMCOREOBJS) .*.o.d sys/.*.o.d libgcc/.*.o.d
 
 
