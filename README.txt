@@ -129,4 +129,12 @@ Alternative installation, if you don't want to run the installer:
 Fun fact: Installation also works as `python liigboot.zip install ...' if you
 have Python 2.6, 2.7 or 3.x installed.
 
+How to try Liigboot without installation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+You can try it (e.g. running memtest) in QEMU:
+
+  $ qemu-system-i386 -m 4 -hda liigboot.zip -enable-kvm -net none
+
+If it doesn't start, run it without the `-enable-kvm'.
+
 __END__
