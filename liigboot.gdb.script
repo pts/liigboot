@@ -1,0 +1,55 @@
+#
+# liigboot.gdb.script: GDB debugging script for liigboot.zip
+#
+# Breakpoints don't work with `qemu ... -machine accel=kvm', so don't specify that.
+#
+# $ make liigboot.zip
+# $ qemu-system-i386 -m 256 -hda liigboot.zip -localtime -no-acpi -s -S &
+# $ gdb -x liigboot.gdb.script
+#
+
+# This is where GDB looks for source files (e.g. syslinux/core/diskstart.inc).
+directory syslinux/core
+add-symbol-file syslinux/core/ldlinux.elf 0
+# Make `quit' quit.
+set confirm off
+# SUXX: doesn't show the commands executed
+set logging file liigboot.gdb.log
+set logging overwrite on
+set logging redirect off
+set logging on
+target remote localhost:1234
+set architecture i8086
+# Display the instruction.
+display /i ($cs*16)+$pc
+# This is where the MBR is loaded to.
+#break *0x7c00
+# `break bootsec' doesn't work.
+# `break *&bootsec' is equivalent to `break *0x7c00'.
+break *&bootsec
+#break *0x88b0
+break *&all_read
+set pagination off
+# Like `c' and `cont' and `conti', but print registers and memory as well.
+define cc
+  cont
+  echo CC\n
+  x/i ($cs*16)+$pc
+  info registers
+  set logging redirect on
+  # Why this much: (80-2)*512+0x7c00+0xc00 == 74752
+  x/74752bx 0
+  set logging redirect off
+  x/i ($cs*16)+$pc
+end
+# MBR boot.
+cc
+
+# ... Then use frame to show the current source line. This won't be reliable
+#     until all_read is reached (i.e. by running cc), because the boot sector
+#     doesn't have debug info.
+# ... Then use list to show multiple surrounding source lines.
+# ... Then use `set listsize list 5' to make `list' show +-2 surrounding
+#     source lines.
+# ... Then use stepi to run instruction-by-instruction.
+# ... Then use cc to continue until the next interesting breakpoint, and dump memory.

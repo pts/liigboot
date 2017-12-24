@@ -29,3 +29,4 @@ syslinux/libcore/libcore.a
 liigboot.zip.good
 /sdb.*
 my.img
+liigboot.gdb.log
