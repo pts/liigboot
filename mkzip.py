@@ -123,8 +123,17 @@ def main(argv):
     # TODO(pts): Preserve modification time.
     if mtime[0] < 1980:
       raise ValueError(mtime)
-    direntry_new = 'INSTALL ZIP\x20\x18\0\xf8\xbd\x95\x4b\x95\x4b\0\0' + struct.pack(
-        '<LHL',
+    ATTRIB_SYSTEM = 0x4
+    ATTRIB_ARCHIVE = 0x20
+    LCASE_BASE = 0x8
+    LCASE_EXT = 0x10
+    filename83 = 'INSTALL ZIP'
+    direntry_new = struct.pack(
+        '<11sBB9sLHL',
+        filename83,
+        ATTRIB_SYSTEM | ATTRIB_ARCHIVE,
+        LCASE_BASE | LCASE_EXT,
+        '\0\xf8\xbd\x95\x4b\x95\x4b\0\0',
         mtime[3] << 11 | mtime[4] << 5 | mtime[5] >> 1 | (mtime[0] - 1980) << 25 | mtime[1] << 21 | mtime[2] << 16,
         direntry_start_cluster, direntry_file_size)
     for i in xrange(0xac00, 0xb000, 32):  # 1024 bytes of FAT root directory.
