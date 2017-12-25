@@ -1,0 +1,37 @@
+## Boot-time config of GRUB4DOS grldr, if menu.lst is not found.
+## by pts@fazekas.hu at Mon Dec 25 16:30:41 CET 2017
+
+## This is needed, otherwise GRUB4DOS can't find the default drive.
+root (hd0)
+## Try to find /menu.lst , and stop if found.
+configfile
+##default 0
+## Measured in seconds.
+timeout 3
+
+title find and use menu.lst on any hard drive
+	errorcheck off
+	find --set-root --ignore-floppies --ignore-cd /menu.lst && configfile /menu.lst
+	find --set-root --ignore-floppies --ignore-cd /boot/grub/menu.lst && configfile /boot/grub/menu.lst
+	find --set-root --ignore-floppies --ignore-cd /grub/menu.lst && configfile /grub/menu.lst
+	errorcheck on
+	# Unfortunately `default 1' has no effect here.
+	default 1
+
+# <Enter> chooses this option 0.
+title back to liigboot:
+	chainloader +1
+	boot
+
+title commandline
+	commandline
+
+title memtest
+	kernel /memtest.k
+	boot
+
+title reboot
+	reboot
+
+title halt
+	halt

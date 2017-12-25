@@ -33,5 +33,9 @@ liigboot.gdb.log
 hiiimain.uncompressed.bin
 hiiimain.compressed.bin
 random.bin
-liigmain.bin.tmp
 liigmain.bin
+grldr
+syslinux.cfg.simplified
+menu.lst.simplified
+mcopy.tmp
+*.tmp

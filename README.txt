@@ -6,12 +6,12 @@ disk, letting the user choose which partition to boot from. Liigboot
 autodetects which partitions contain bootable operating system. Liigboot
 provides full with the default settings, not configuration needed. The
 bootloader code resides in the initial 1 MiB of the hard disk, in front of
-first parititon. Liigboot also contains a copy of GRUB (legacy, not GRUB2)
-and memtest86+. Liigboot comes with a Liigresc, a larger, 128 MiB image (out
-of which 16 MiB is used), which contains a command-line rescue system based
-on Tiny Core Linux, with (wired) networking support. This can be used for
-some rescue and data recovery in case the main operating systems fail to
-boot.
+first parititon. Liigboot also contains a copy of GRUB (GRUB4DOS, which is
+more similar to legacy than GRUB2) and memtest86+. Liigboot comes with a
+Liigresc, a larger, 128 MiB image (out of which 16 MiB is used), which
+contains a command-line rescue system based on Tiny Core Linux, with (wired)
+networking support. This can be used for some rescue and data recovery in
+case the main operating systems fail to boot.
 
 Feature support:
 

@@ -150,7 +150,7 @@ def main(argv):
   # !! upx: liigmain.bin.tmp: NotCompressibleException
   # TODO(pts): Experiment with --ultra-brute --lzma.
   subprocess.check_call(
-      (os.path.dirname(__file__) + 'tools/upx', '-qq',
+      ((os.path.dirname(__file__) or '.') + '/tools/upx', '-qq',
        '--ultra-brute', '--', output_filename + '.tmp'))
   data = open(output_filename + '.tmp', 'rb').read()
   exe_header = data[:0x20]
