@@ -16,17 +16,16 @@ db 0xfa, 0xf4
 
 ; At LOAD_ADDR + 0x50.
 start:
+mov bx, 7  ; Color for int 0x10 below. QEMU seems to be ignoring it.
 
 pop ax  ; !! as pushed by liigboot_boot.nasm before the jump
 mov ah, 0x0e
-xor bx, bx
 int 0x10
 
 jmp near start2
 times 0x123-($-$$) db 0
 start2:
 mov ax, 0x0e00 + '#'
-xor bx, bx
 int 0x10
 
 mov si, msg_pre
@@ -43,7 +42,6 @@ lodsb  ; 13
 lodsb  ; 10
 lodsb  ; '9'
 mov ah, 0x0e
-xor bx, bx
 int 0x10
 
 %if 1
@@ -55,7 +53,6 @@ lodsb  ; 13
 lodsb  ; 10
 lodsb  ; 'M'
 mov ah, 0x0e
-xor bx, bx
 int 0x10
 %endif
 
@@ -66,7 +63,6 @@ hlt
 print:
 ; Teletype output	AH=0Eh	AL = Character, BH = Page Number, BL = Color (only in graphic mode)
 mov ah, 0x0e
-xor bx, bx
 .next:
 lodsb
 and al, al

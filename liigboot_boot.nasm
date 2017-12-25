@@ -161,8 +161,8 @@ mov ds, ax
 ;jne .spok
 
 ; Teletype output	AH=0Eh	AL = Character, BH = Page Number, BL = Color (only in graphic mode)
-mov ax, 0x0e00 + 'M'  ; !! Update chars 'M' and 'R' to 'Li' of 'Liigboot'. !! Also modify the copyright.
-xor bx, bx
+mov ax, 0x0e00 + 'L'
+mov bx, 7  ; Color for int 0x10 below. QEMU seems to be ignoring it.
 int 0x10
 
 ;.spok:
@@ -189,13 +189,13 @@ jnc strict short read_ok
 read_error:
 no_ebios:
 mov ax, 0x0e00 + 'E'
-xor bx, bx
+mov bx, 7  ; Color for int 0x10 below. QEMU seems to be ignoring it.
 int 0x10
 hlt
 
 read_ok:
-mov ax, 0x0e00 + 'R'
-xor bx, bx
+mov ax, 0x0e00 + 'i'
+mov bx, 7  ; Color for int 0x10 below. QEMU seems to be ignoring it.
 int 0x10
 
 ; Register values copied from gdb3.reg.
