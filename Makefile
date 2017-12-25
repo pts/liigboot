@@ -46,8 +46,10 @@ liigresc_empty.img: liigboot_boot.nasm $(LIIGMAIN)
 liigboot_empty.img: liigboot_boot.nasm $(LIIGMAIN)
 	nasm -f bin -o $@ -DLIIGBOOT $(EMPTYFS_DEFINES) liigboot_boot.nasm
 
-liigboot.img: liigboot_empty.img external/memtest86+-5.01.kernel syslinux.cfg.simplified menu.lst.simplified grldr
-	cp -a liigboot_empty.img $@.tmp
+.PRECIOUS: liigboot.img
+.PRECIOUS: liigresc.img
+%.img: %_empty.img external/memtest86+-5.01.kernel syslinux.cfg.simplified menu.lst.simplified grldr
+	cp -a $< $@.tmp
 	python copy_to_fat.py --img=$@.tmp --in=syslinux.cfg.simplified --out=syslinux.cfg      --mtime=$(HEXDATE2)
 	python copy_to_fat.py --img=$@.tmp --in=menu.lst.simplified     --out=menu.lst          --mtime=$(HEXDATE2)
 	python copy_to_fat.py --img=$@.tmp --in=grldr                   --out=grldr             --mtime=$(HEXDATE2)

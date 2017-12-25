@@ -143,9 +143,7 @@ kaboom2:
 ; -----------------------------------------------------------------------------
 
 		section .data16
-copyright_str   db ' Copyright (C) 1994-'
-		asciidec YEAR
-		db ' H. Peter Anvin et al', CR, LF, 0
+copyright_str   db '. Press <Enter> for help, <Tab> for optoins.', CR, LF, 0
 err_bootfailed	db CR, LF, 'Boot failed: please change disks and press '
 		db 'a key to continue.', CR, LF, 0
 

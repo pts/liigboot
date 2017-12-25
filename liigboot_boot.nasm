@@ -352,7 +352,13 @@ times 0x400-($-$$) db 0
 ;            prebuilt/libcore.a
 ;incbin 'syslinux/core/ldlinux.raw', LOAD_ADDR  ; Uncompressed, but too large.
 ;incbin 'liigmain.bin'
-incbin LIIGMAIN
+%ifdef LIIGRESC
+incbin LIIGMAIN, 0, 0xf
+db 'Liigresc'  ; Change the welcome banner prefix. Must be 8 bytes.
+incbin LIIGMAIN, 0x17
+%else
+incbin LIIGMAIN, 0
+%endif
 
 ;incbin 'hiiimain.compressed.bin'
 ;incbin 'hiiimain.uncompressed.bin'

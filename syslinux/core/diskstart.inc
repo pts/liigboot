@@ -51,6 +51,8 @@ StackHome	equ Hidden		; The start of the canonical stack
 		zb LOAD_ADDR-0x7c00-($-$$)
 load_addr:  ; 0x8000, -DLOAD_ADDR=0x8000
 
+; ---
+;
 ; At most 0x2c bytes of headers. Will be retained by both the compressed and
 ; the uncompressed variant.
 
@@ -58,10 +60,17 @@ load_addr:  ; 0x8000, -DLOAD_ADDR=0x8000
 ADVSec0		dd 0			; Not specified
 ADVSec1		dd 0			; Not specified
 MaxTransfer	dw 127		; Max sectors to transfer
+		dw 0
 
-		zb LOAD_ADDR+0x2c-0x7c00-($-$$)
+syslinux_banner db 13, 10
+late_banner	db 13, 'Liigboot ', DATE_STR, 0
+		zb 0x23-($-load_addr)
 
-_start:
+		zb 0x2c-($-load_addr)
+
+; ---
+
+_start:  ; 0x802c
 		; The liigmain.bin uncompressed signature.
 		; Harmless code (jumps over itself).
 		dw 0x22eb
@@ -241,9 +250,6 @@ SuperInfo	resq 16			; The first 16 bytes expanded 8 times
 
 ;
 ; Banner information not needed in sector 1
-;
-		section .data16
-syslinux_banner	db CR, LF, MY_NAME, ' ', VERSION_STR
-late_banner	db ' ', DATE_STR, 0
+;		section .data16
 
 		section .text16

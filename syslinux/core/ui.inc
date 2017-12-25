@@ -685,7 +685,7 @@ is_bss_sector	equ is_bad_image
 is_disk_image	equ is_bad_image	; No longer supported
 
 		section .data16
-boot_prompt	db 'boot: ', 0
+boot_prompt	db 'liigboot: ', 0
 wipe_char	db BS, ' ', BS, 0
 err_badimage	db 'Invalid image type for this media type!', CR, LF, 0
 err_notfound	db 'Could not find kernel image: ',0
