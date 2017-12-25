@@ -30,9 +30,14 @@ endif
 LIIGMAIN := liigmain.bin
 
 BOOT_DEFINES = -DLOAD_ADDR=$(LOAD_ADDR2)
-EMPTYFS_DEFINES = $(BOOT_DEFINES) -DEMPTYFS \
-    -DLIIGMAIN="'$(LIIGMAIN)'" \
-    -DLIIGMAIN_SECTOR_COUNT=$(shell python -c 'import os, sys; print((os.stat(sys.argv[1]).st_size + 511) >> 9)' '$(LIIGMAIN)')
+EMPTYFS_DEFINES = $(BOOT_DEFINES) -DEMPTYFS -DLIIGMAIN="'$(LIIGMAIN)'"
+
+# Can be overridden on the command-line:
+# * make liigboot.zip LIIGMAIN_SECTOR_COUNT=80
+LIIGMAIN_SECTOR_COUNT=
+ifneq ($(LIIGMAIN_SECTOR_COUNT),)
+EMPTYFS_DEFINES += -DLIIGMAIN_SECTOR_COUNT=$(LIIGMAIN_SECTOR_COUNT)
+endif
 
 all: liigboot.zip
 

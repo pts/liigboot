@@ -59,10 +59,10 @@ nop  ; db 0x90
 
 db 'LIIGBOOT'  ; OEM ID.
 
-%ifndef LIIGMAIN_SECTOR_COUNT
-%define LIIGMAIN_SECTOR_COUNT 78  ; An upper limit is fine.
-%endif
+%ifdef LIIGMAIN_SECTOR_COUNT
 liigmain_sc equ LIIGMAIN_SECTOR_COUNT
+;%else ... NASM will compute the minimum value automatically below. Smart!
+%endif
 ; The reserved sector count in the FAT filesystem.
 ; The boot sector and another (future ADV) sector preceeds LIIGMAIN.
 res_sc equ liigmain_sc + 2
@@ -368,6 +368,10 @@ db 'Liigresc'  ; Change the welcome banner prefix. Must be 8 bytes.
 incbin LIIGMAIN, 0x17
 %else
 incbin LIIGMAIN, 0
+%endif
+
+%ifndef LIIGMAIN_SECTOR_COUNT
+liigmain_sc equ ((($-$$)+511)>>9)-2
 %endif
 
 ; If nasm reports `error: TIMES value -... is negative' here, then the file
