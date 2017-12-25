@@ -30,7 +30,9 @@ endif
 LIIGMAIN := liigmain.bin
 
 BOOT_DEFINES = -DLOAD_ADDR=$(LOAD_ADDR2)
-EMPTYFS_DEFINES = $(BOOT_DEFINES) -DEMPTYFS -DLIIGMAIN="'$(LIIGMAIN)'"
+EMPTYFS_DEFINES = $(BOOT_DEFINES) -DEMPTYFS \
+    -DLIIGMAIN="'$(LIIGMAIN)'" \
+    -DLIIGMAIN_SECTOR_COUNT=$(shell python -c 'import os, sys; print((os.stat(sys.argv[1]).st_size + 511) >> 9)' '$(LIIGMAIN)')
 
 all: liigboot.zip
 
@@ -48,12 +50,13 @@ liigboot_empty.img: liigboot_boot.nasm $(LIIGMAIN)
 
 .PRECIOUS: liigboot.img
 .PRECIOUS: liigresc.img
-%.img: %_empty.img external/memtest86+-5.01.kernel syslinux.cfg.simplified menu.lst.simplified grldr
+%.zip: %_empty.img external/memtest86+-5.01.kernel syslinux.cfg.simplified menu.lst.simplified grldr mkzip.py liigboot.img.install
 	cp -a $< $@.tmp
 	python copy_to_fat.py --img=$@.tmp --in=syslinux.cfg.simplified --out=syslinux.cfg      --mtime=$(HEXDATE2)
 	python copy_to_fat.py --img=$@.tmp --in=menu.lst.simplified     --out=menu.lst          --mtime=$(HEXDATE2)
 	python copy_to_fat.py --img=$@.tmp --in=grldr                   --out=grldr             --mtime=$(HEXDATE2)
 	python copy_to_fat.py --img=$@.tmp --in=external/memtest86+-5.01.kernel --out=memtest.k --mtime=$(HEXDATE2)
+	python mkzip.py --do-add-install-zip --install=liigboot.img.install --mtime=$(HEXDATE2) --img=$@.tmp
 	mv $@.tmp $@
 
 liigboot.img.install: install.c
@@ -64,8 +67,6 @@ liigboot.img.install: install.c
 liigboot.img.install.debug: install.c
 	xstatic gcc -g -DDEBUG -W -Wall -Wextra -Werror -o $@ install.c
 
-liigboot.zip: liigboot.img liigboot.img.install mkzip.py
-	python mkzip.py --do-add-install-zip --mtime=$(HEXDATE2) liigboot.img
 
 liigmain.bin: syslinux/core/ldlinux.raw bmcompress.py
 	python bmcompress.py --bin=$< --out=$@ --load-addr=$(LOAD_ADDR2) --skip0=$(LOAD_ADDR2)
@@ -93,5 +94,5 @@ grldr: external/grub4dos-0.4.4.grldr fallback_menu.lst patch_grldr.py
 	python patch_grldr.py --out=$@ --menu=$<
 
 clean:
-	rm -f liigresc_bs.bin liigboot_bs.bin liigresc_empty.img liigboot_empty.img liigboot.img liigboot.img.tmp liigboot.img.install liigboot.img.ziptmp liigboot.zip mcopy.tmp liigmain.bin hiiimain.uncompressed.bin hiiimain.compressed.bin grldr syslinux.cfg.simplified menu.lst.simplified
+	rm -f liigresc_bs.bin liigboot_bs.bin liigresc_empty.img liigboot_empty.img liigboot.img liigboot.zip.tmp liigresc.zip.tmp liigboot.img.install liigboot.zip.tmp.ziptmp liigresc.zip.tmp.ziptmp liigboot.zip mcopy.tmp liigmain.bin hiiimain.uncompressed.bin hiiimain.compressed.bin grldr syslinux.cfg.simplified menu.lst.simplified
 	$(MAKE) -C syslinux clean

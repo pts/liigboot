@@ -7,8 +7,8 @@
 ;   $ nasm -f bin -o liigresc_bs.bin -DLIIGRESC liigboot_boot.nasm
 ;   $ nasm -f bin -o liigboot_bs.bin -DLIIGBOOT liigboot_boot.nasm
 ;
-; To compile the entire FAT filesystem with liigmain.bin in the reserved
-; sectores:
+; To compile the entire empty FAT filesystem with liigmain.bin in the
+; reserved sectors:
 ;
 ;   $ nasm -f bin -o liigresc_empty.img -DLIIGRESC -DEMPTYFS liigboot_boot.nasm
 ;   $ nasm -f bin -o liigboot_empty.img -DLIIGBOOT -DEMPTYFS liigboot_boot.nasm
@@ -40,8 +40,8 @@ org 0x7c00  ; The BIOS loads the boot sector.
 ; the boot code), including the BPB (BIOS parameter block).
 ; (FAT32 may need 90 bytes.) Copied from the beginning of ldlinuxmbr.bin .
 entry1:
-jmp strict short entry2  ; db 235,60
-nop  ; db 144
+jmp strict short entry2  ; db 0xeb, 0x3c
+nop  ; db 0x90
 
 %ifdef LIIGRESC
 %ifdef LIIGBOOT
@@ -57,7 +57,15 @@ nop  ; db 144
 
 ; FAT filesystem headers (BPB, BIOS Parameter Block).
 
-db 'SYSLINUX'  ; OEM ID.
+db 'LIIGBOOT'  ; OEM ID.
+
+%ifndef LIIGMAIN_SECTOR_COUNT
+%define LIIGMAIN_SECTOR_COUNT 78  ; An upper limit is fine.
+%endif
+liigmain_sc equ LIIGMAIN_SECTOR_COUNT
+; The reserved sector count in the FAT filesystem.
+; The boot sector and another (future ADV) sector preceeds LIIGMAIN.
+res_sc equ liigmain_sc + 2
 
 %ifdef LIIGRESC
 ; These headers describe a FAT16 filesystem of 128 MiB in size, with 80
@@ -70,7 +78,7 @@ db 'SYSLINUX'  ; OEM ID.
 dw 512   ; Sector size in bytes.
 db 4     ; Sectors per cluster.
 ; !! Make the number of Syslinux reserved sectors even less. Both locations.
-dw 80    ; Number of reserved sectors.
+dw res_sc ; Number of reserved sectors.
 db 1     ; Number of FATs.
 dw 512   ; Number of root directory entries.
 dw 0     ; Number of sectors or 0.
@@ -79,7 +87,7 @@ dw 256   ; Sectors per FAT.
 dw 32    ; Sectors per track (CHS).
 dw 64    ; Heads (CHS).
 dd 0     ; Hidden.
-dd 0x40000 ; Number of sectors if the field above is 0.
+dd 0x40000 ; Number of sectors if the dw field for that above is 0.
 dw 0x80  ; Physical drive number.
 db 0x29  ; B4 BPB signature.
 dd 0x33A816C5    ; UUID (serial number).
@@ -97,7 +105,7 @@ db 'FAT16   '    ; Filesytem type.
 ;
 dw 512   ; Sector size in bytes.
 db 1     ; Sectors per cluster.
-dw 80    ; Number of reserved sectors.
+dw res_sc ; Number of reserved sectors.
 db 1     ; Number of FATs.
 dw 32    ; Number of root directory entries.
 dw 2048  ; Number of sectors or 0.
@@ -106,7 +114,7 @@ dw 6     ; Sectors per FAT.
 dw 32    ; Sectors per track (CHS).
 dw 64    ; Heads (CHS).
 dd 0     ; Hidden.
-dd 0     ; Number of sectors if the field above is 0.
+dd 0     ; Number of sectors if the dw field for that above is 0.
 dw 0x80  ; Physical drive number.
 db 0x29  ; B4 BPB signature.
 dd 0x33A816C6    ; UUID (serial number).
@@ -351,6 +359,8 @@ times 0x400-($-$$) db 0
 ;            prebuilt/libcomcore.a
 ;            prebuilt/libcore.a
 ;incbin 'syslinux/core/ldlinux.raw', LOAD_ADDR  ; Uncompressed, but too large.
+;incbin 'hiiimain.compressed.bin'
+;incbin 'hiiimain.uncompressed.bin'
 ;incbin 'liigmain.bin'
 %ifdef LIIGRESC
 incbin LIIGMAIN, 0, 0xf
@@ -360,28 +370,30 @@ incbin LIIGMAIN, 0x17
 incbin LIIGMAIN, 0
 %endif
 
-;incbin 'hiiimain.compressed.bin'
-;incbin 'hiiimain.uncompressed.bin'
 ; If nasm reports `error: TIMES value -... is negative' here, then the file
 ; LIIGMAIN is too long.
-times 0xa000-($-$$) db 0
+times (res_sc<<9)-($-$$) db 0
 
 %ifdef LIIGRESC
 dw 0xfff8, 0xffff  ; Empty FAT16 FAT.
-times 0x2a000-($-$$) db 0
+times 0x20000+(res_sc<<9)-($-$$) db 0
 db VOLUME_LABEL
 ; Rest of the directory entry for the volume label.
-db 8, 0, 0, 0x41, 9, 0x94, 0x4b, 0x94, 0x4b, 0, 0, 0x51, 9, 0x94, 0x4b, 0, 0, 0, 0, 0, 0
+db 8, 0, 0, 0x41, 9, 0x94, 0x4b, 0x94, 0x4b, 0, 0, 0x51, 9, 0x94, 0x4b
+dw 0  ; direntry.start_cluster.
+dd 0  ; direntry.file_size.
 times 0x8000000-($-$$) db 0  ; This is slow (it takes >10 seconds to compile.)
 %endif
 
 %ifdef LIIGBOOT
 db 0xf8, 0xff, 0xff  ; Empty FAT12 FAT.
 
-times 0xac00-($-$$) db 0
+times 0xc00+(res_sc<<9)-($-$$) db 0
 db VOLUME_LABEL
 ; Rest of the directory entry for the volume label.
-db 8, 0, 0, 0x41, 4, 0x90, 0x4b, 0x90, 0x4b, 0, 0, 0x41, 4, 0x90, 0x4b, 0, 0, 0, 0, 0, 0
+db 8, 0, 0, 0x41, 4, 0x90, 0x4b, 0x90, 0x4b, 0, 0, 0x41, 4, 0x90, 0x4b
+dw 0  ; direntry.start_cluster.
+dd 0  ; direntry.file_size.
 times 0x100000-($-$$) db 0
 %endif
 

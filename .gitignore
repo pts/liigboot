@@ -8,7 +8,11 @@ liigboot_empty.img
 liigboot.img
 liigresc.img
 liigboot.zip
-liigboot.img.ziptmp
+liigresc.zip
+/liigboot.zip.tmp
+/liigboot.zip.tmp.ziptmp
+/liigresc.zip.tmp
+/liigresc.zip.tmp.ziptmp
 liigboot.img.install
 liigboot.img.install.debug
 *.bin.good
