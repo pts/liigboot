@@ -340,9 +340,8 @@ times 0x200-($-$$) db 0  ; Doesn't add any additional bytes.
 
 %ifdef EMPTYFS
 
-%ifndef LIIGMAIN 
-; !! Use ldlinux.raw, compress liigmain.bin.
-%define LIIGMAIN 'syslinux/core/ldlinux.bin'  ; Uncompressed.
+%ifndef LIIGMAIN
+%fatal Run nasm -DLIIGMAIN="'...'"
 %endif
 
 ; 1 sector (0x200...0x400) here is reserved for Syslinux ADV.
@@ -352,6 +351,7 @@ times 0x400-($-$$) db 0
 ;            prebuilt/libcomcore.a
 ;            prebuilt/libcore.a
 ;incbin 'syslinux/core/ldlinux.raw', LOAD_ADDR  ; Uncompressed, but too large.
+;incbin 'liigmain.bin'
 incbin LIIGMAIN
 
 ;incbin 'hiiimain.compressed.bin'

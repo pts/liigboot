@@ -1,5 +1,5 @@
 ; by pts@fazekas.hu at Mon Dec 25 04:22:48 CET 2017
-; 
+;
 ; $ nasm -DLOAD_ADDR=0x8000 -f bin -o hiiimain.bin hiiimain.nasm
 ;
 
@@ -15,7 +15,7 @@ times 16 dw 0x5b53  ; This will be destroyed by compression.
 db 0xfa, 0xf4
 
 ; At LOAD_ADDR + 0x50.
-start: 
+start:
 
 pop ax  ; !! as pushed by liigboot_boot.nasm before the jump
 mov ah, 0x0e

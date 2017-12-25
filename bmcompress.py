@@ -180,7 +180,7 @@ def main(argv):
     #00023AE7  8ED0              mov ss,ax
     #00023AE9  BC5020            mov sp,0x2050
     assert data_ary[dofs - 12 : dofs - 3].tostring() == struct.pack(
-        '<7sH', '\x8d\x86\0\0\x8e\xd0\xbc', sp_magic)  # mov sp, 0x....  
+        '<7sH', '\x8d\x86\0\0\x8e\xd0\xbc', sp_magic)  # mov sp, 0x....
     #sp_addr = dofs - 5 + (load_seg << 4)
     data_ary[dofs - 12 : dofs + 2] = array.array(
         'B',
