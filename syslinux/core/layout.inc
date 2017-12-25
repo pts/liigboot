@@ -115,6 +115,7 @@ RBFG_brainfuck:	resb 2048		; Bigger than an Ethernet packet...
 
 		extern free_high_memory
 
+		global load_addr
 		global _start
 
 		section .text16

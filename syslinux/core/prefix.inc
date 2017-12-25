@@ -4,7 +4,7 @@
 ;
 
 		section .prefix		nowrite progbits align=16
-pfx_start	dd _start		; Start of raw chunk
+pfx_start	dd load_addr		; Start of raw chunk
 pfx_compressed	dd __pm_code_lma	; Start of compressed chunk
 pfx_cdatalen	dd lzo_data_size	; Pointer to compressed size field
 %if IS_ISOLINUX

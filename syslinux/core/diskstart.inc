@@ -28,13 +28,9 @@ MaxLMA equ (96<<10) + 0x8000  ; 0x20000
 
 		section .init
 
-		zb 0x8800-0x7c00-($-$$)
-_start:  ; 0x8800
-
-; This must start at the beginning.
-ADVSec0		dd 0			; Not specified
-ADVSec1		dd 0			; Not specified
-
+; All these symbols have the value 0x7c00: STACK_TOP, TEXT_START, __init_start,
+; __stack16_end, bootsec. This is the address where the BIOS loads the MBR
+; boot sector (i.e. LBA sector 0 of the drive).
 StackBuf	equ STACK_TOP-44-92	; Start the stack here (grow down - 4K)
 PartInfo	equ StackBuf
 .mbr		equ PartInfo
@@ -49,7 +45,32 @@ OrigESDI	equ StackBuf-8		; ES:DI -> $PnP structure
 DriveNumber	equ StackBuf-4		; Drive number
 StackHome	equ Hidden		; The start of the canonical stack
 
+%ifndef LOAD_ADDR
+%fatal Run nasm -DLOAD_ADDR=0x...
+%endif
+		zb LOAD_ADDR-0x7c00-($-$$)
+load_addr:  ; 0x8800, -DLOAD_ADDR=0x8800
+
+; At most 0x2c bytes of headers. Will be retained by both the compressed and
+; the uncompressed variant.
+
+; This must start at the beginning.
+ADVSec0		dd 0			; Not specified
+ADVSec1		dd 0			; Not specified
 MaxTransfer	dw 127		; Max sectors to transfer
+
+		zb LOAD_ADDR+0x2c-0x7c00-($-$$)
+
+_start:
+		; The liigmain.bin uncompressed signature.
+		; Harmless code (jumps over itself).
+		dw 0x22eb
+		times 16 dw 0x5b53
+		dw 0xf4fa
+
+		jmp near all_read
+
+; !! Move the rest of .init to .text16 below.
 
 ;
 ;
@@ -165,11 +186,11 @@ bailmsg:	db 'Boot error', 0Dh, 0Ah
 global SubvolName  ; Needed by fs/btrfs/btrfs.c .
 SubvolName      db 0
 
-		zb 0x88b0-0x7c00-($-$$)
+;		zb 0x88b0-0x7c00-($-$$)
 ;		zb 0x8970-0x7c00-($-$$)
 
 		section .text16
-all_read:  ; was at 0x8970, now at 0x88b0
+all_read:
 		; We enter here with ES scrambled...
 		xor ax,ax
 		mov es,ax

@@ -3,24 +3,39 @@
 ifeq ($(HEXDATE),)
 # Unix timestamp corresponding to `Fri Dec  8 20:07:37 GMT 2017'.
 # Also 1512763657.
-# Can be overridden in the command-line.
+# Can be overridden on the command-line.
 # !! Bump this when released.
 HEXDATE2 := 0x5a2af109
 else
 HEXDATE2 := $(HEXDATE)
 endif
 
+ifeq ($(LOAD_ADDR),)
+LOAD_ADDR2 := 0x8800
+else
+LOAD_ADDR2 := $(LOAD_ADDR)
+endif
+
+# Can be overridden on the command-line:
+# * make liigboot.zip LIIGMAIN=hiiimain.compressed.bin
+LIIGMAIN := syslinux/core/ldlinux.bin
+
+BOOT_DEFINES = -DLOAD_ADDR=$(LOAD_ADDR2)
+EMPTYFS_DEFINES = $(BOOT_DEFINES) -DEMPTYFS -DLIIGMAIN="'$(LIIGMAIN)'"
+
 all: liigresc_bs.bin liigboot_bs.bin
 
 liigresc_bs.bin: liigboot_boot.nasm
-	nasm -f bin -o $@ -DLIIGRESC liigboot_boot.nasm
+	nasm -f bin -o $@ -DLIIGRESC $(BOOT_DEFINES) liigboot_boot.nasm
 liigboot_bs.bin: liigboot_boot.nasm
-	nasm -f bin -o $@ -DLIIGBOOT liigboot_boot.nasm
+	nasm -f bin -o $@ -DLIIGBOOT $(BOOT_DEFINES) liigboot_boot.nasm
+hiiimain.uncompressed.bin: hiiimain.nasm
+	nasm -f bin -o $@ $(BOOT_DEFINES) hiiimain.nasm
 
-liigresc_empty.img: liigboot_boot.nasm syslinux/core/ldlinux.bin
-	nasm -f bin -o $@ -DLIIGRESC -DEMPTYFS liigboot_boot.nasm
-liigboot_empty.img: liigboot_boot.nasm syslinux/core/ldlinux.bin
-	nasm -f bin -o $@ -DLIIGBOOT -DEMPTYFS liigboot_boot.nasm
+liigresc_empty.img: liigboot_boot.nasm $(LIIGMAIN)
+	nasm -f bin -o $@ -DLIIGRESC $(EMPTYFS_DEFINES) liigboot_boot.nasm
+liigboot_empty.img: liigboot_boot.nasm $(LIIGMAIN)
+	nasm -f bin -o $@ -DLIIGBOOT $(EMPTYFS_DEFINES) liigboot_boot.nasm
 
 liigboot.img: liigboot_empty.img external/memtest86+-5.01.kernel syslinux.cfg
 	cp -a liigboot_empty.img $@.tmp
@@ -44,10 +59,16 @@ liigboot.img.install.debug: install.c
 liigboot.zip: liigboot.img liigboot.img.install mkzip.py
 	python mkzip.py --do-add-install-zip --mtime=$(HEXDATE2) liigboot.img
 
+liigmain.bin: syslinux/core/ldlinux.bin bmcompress.py
+	python bmcompress.py --bin=syslinux/core/ldlinux.bin --out=$@ --load-addr=$(LOAD_ADDR2)
+.PRECIOUS: hiiimain.compressed.bin
+%.compressed.bin: %.uncompressed.bin bmcompress.py
+	python bmcompress.py --bin=$< --out=$@ --load-addr=$(LOAD_ADDR2)
+
 # All dependencies are listed here.
 LDLINUX_BIN_TARGETS = core/ldlinux.bin core/ldlinux.raw core/ldlinux.elf core/ldlinux.lsr core/ldlinux.lst core/ldlinux.map core/ldlinux.o core/ldlinux.sec
 $(addprefix syslinux/,$(LDLINUX_BIN_TARGETS)): syslinux/libcomcore/libcomcore.a syslinux/libcore/libcore.a syslinux/core/syslinux.ld syslinux/core/ldlinux.asm $(wildcard syslinux/core/*.inc)
-	$(MAKE) -C syslinux $(LDLINUX_BIN_TARGETS) HEXDATE=$(HEXDATE2)
+	$(MAKE) -C syslinux $(LDLINUX_BIN_TARGETS) HEXDATE=$(HEXDATE2) LOAD_ADDR=$(LOAD_ADDR2)
 SYSLINUX_VERSION_TARGETS = version.gen version.h version.mk
 $(addprefix syslinux/,$(SYSLINUX_VERSION_TARGETS)): syslinux/version syslinux/version.pl
 	$(MAKE) -C syslinux $(SYSLINUX_VERSION_TARGETS)
@@ -59,5 +80,5 @@ syslinux/libcore/libcore.a: $(wildcard $(addprefix syslinux/,libcore/include/*.h
 	$(MAKE) -C syslinux libcore/libcore.a
 
 clean:
-	rm -f liigresc_bs.bin liigboot_bs.bin liigresc_empty.img liigboot_empty.img liigboot.img liigboot.img.tmp liigboot.img.install liigboot.img.ziptmp liigboot.zip mcopy.tmp
+	rm -f liigresc_bs.bin liigboot_bs.bin liigresc_empty.img liigboot_empty.img liigboot.img liigboot.img.tmp liigboot.img.install liigboot.img.ziptmp liigboot.zip mcopy.tmp liigmain.bin hiiimain.uncompressed.bin hiiimain.compressed.bin
 	$(MAKE) -C syslinux clean

@@ -30,3 +30,7 @@ liigboot.zip.good
 /sdb.*
 my.img
 liigboot.gdb.log
+hiiimain.uncompressed.bin
+hiiimain.compressed.bin
+random.bin
+liigmain.bin.tmp

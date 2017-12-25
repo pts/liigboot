@@ -62,6 +62,12 @@ else
 HEXDATE2 := $(HEXDATE)
 endif
 
+ifeq ($(LOAD_ADDR),)
+LOAD_ADDR2 := 0x8800
+else
+LOAD_ADDR2 := $(LOAD_ADDR)
+endif
+
 all: ldlinux.bin
 
 kwdhash.gen: keywords genhash.pl
@@ -82,14 +88,10 @@ kwdhash.gen: keywords genhash.pl
 	$(PREPCORE) $< $@
 
 %.o %.lsr: %.asm kwdhash.gen ../version.gen $(NASMHDR)
-	$(NASM) -f elf $(NASMOPT) -DDATE_STR="'$(HEXDATE2)'" \
-		-DHEXDATE="$(HEXDATE2)" \
-		-l $(<:.asm=.lsr) -o $(<:.asm=.o) -MP -MD .$(<:.asm=.o).d $<
+	$(NASM) -f elf $(NASMOPT) -DDATE_STR="'$(HEXDATE2)'" -DHEXDATE="$(HEXDATE2)" -DLOAD_ADDR=$(LOAD_ADDR) -l $(<:.asm=.lsr) -o $(<:.asm=.o) -MP -MD .$(<:.asm=.o).d $<
 
 %.elf %.lst %.map %.sec: %.o %.lsr $(LIBS) syslinux.ld
-	$(LD) $(LDFLAGS) -T syslinux.ld -M -o $(<:.o=.elf) $< \
-		--start-group $(LIBS) --end-group \
-		> $(<:.o=.map)
+	$(LD) $(LDFLAGS) -T syslinux.ld -M -o $(<:.o=.elf) $< --start-group $(LIBS) --end-group > $(<:.o=.map)
 	$(OBJDUMP) -h $(<:.o=.elf) > $(@:.elf=.sec)
 	$(PERL) lstadjust.pl $(<:.o=.lsr) $(<:.o=.sec) $(<:.o=.lst)
 

@@ -1,5 +1,5 @@
 ;
-; liigboot_boot.nasm: MBR bootloader to load ldlinux.sys and give control to it.
+; liigboot_boot.nasm: MBR bootloader to load liigmain.bin and jump to it.
 ; by pts@fazekas.hu at Wed Dec 20 01:33:02 CET 2017
 ;
 ; To compile just the boot sectors:
@@ -7,7 +7,7 @@
 ;   $ nasm -f bin -o liigresc_bs.bin -DLIIGRESC liigboot_boot.nasm
 ;   $ nasm -f bin -o liigboot_bs.bin -DLIIGBOOT liigboot_boot.nasm
 ;
-; To compile the entire FAT filesystem with ldlinux.sys in the reserved
+; To compile the entire FAT filesystem with liigmain.bin in the reserved
 ; sectores:
 ;
 ;   $ nasm -f bin -o liigresc_empty.img -DLIIGRESC -DEMPTYFS liigboot_boot.nasm
@@ -17,13 +17,13 @@
 ; boot sector containing:
 ;
 ; * a BIOS MBR partition table with 1 entry
-; * bootloader code to load ldlinux.sys from Syslinux 4.07, 39 KiB starting
-;   at sector 2 (byte offset 1024)
+; * bootloader code to load liigmain.bin (based on ldlinux.sys in
+;   Syslinux 4.07, 39 KiB starting at sector 2 (byte offset 1024)
 ; * filesystem headers of a FAT12 or FAT16 filesystem (BIOS parameter block)
 ;
 ; When compiled with the -DEMPTYFS flag, the output file will be longer (1
 ; MiB or 128 MiB), and it will contain a bootable FAT12 or FAT16 filesystem
-; image with no files on it, and the ldlinux.sys code in its reserved
+; image with no files on it, and the liigmain.bin code in its reserved
 ; sectors (39 KiB starting at byte offset 1024).
 ;
 ; TODO(pts): Make it bootable from a partition.
@@ -121,9 +121,9 @@ times 0x3e-($-$$) db 0  ; Doesn't add any additional bytes.
 entry2:
 cli
 cld
-mov esp, 0x7b76
 xor eax, eax
 mov ss, ax
+mov esp, 0x7b76
 
 ; We have to push 12 items.
 push dx  ; Save drive number, goes to 0x7b74.
@@ -161,7 +161,7 @@ mov ds, ax
 ;jne .spok
 
 ; Teletype output	AH=0Eh	AL = Character, BH = Page Number, BL = Color (only in graphic mode)
-mov ax, 0x0e00 + 'M'
+mov ax, 0x0e00 + 'M'  ; !! Update chars 'M' and 'R' to 'Li' of 'Liigboot'. !! Also modify the copyright.
 xor bx, bx
 int 0x10
 
@@ -178,7 +178,8 @@ test cl, 1
 jz  strict short no_ebios
 
 ; https://en.wikipedia.org/wiki/INT_13H#INT_13h_AH.3D42h:_Extended_Read_Sectors_From_Drive
-; Read ldlinux.sys in one go from disk.
+; Read liigmain.bin (see below) in one go from the drive. It's in the reserved
+; sectors of the Liigboot FAT filesystem at the beginning of the drive.
 mov ah, 0x42
 ; dl already contains the drive index.
 mov si, dap
@@ -211,13 +212,84 @@ int 0x10
 ;xor ecx, ecx
 ;mov ebx, 0x10e00
 ;mov edi, 0x7bc4
-; TODO(pts) Do we need to set edx, ebp?
+; We don't need to set these edx or ebp (empirically).
 ;mov edx, 0x1000
 ;mov ebp, 0x8c00
-
-; TODO(pts): Do these addresses change if we relink ldlinux.sys?
 sti
-jmp 0:0x88b0  ; all_read, the entry point of syslinux_liigboot.ldlinux.sys (Syslinux 4.07).
+
+;
+; Now jump to to liigmain.bin.
+;
+; liigmain.bin is the main boot manager code of Liigboot. It
+; loads a config file, it shows a prompt to the user, it is able to run
+; modules (in Syslinux COM32R .c32 format etc.), it is able to boot Linux
+; kernels with initrd etc. It's based on Syslinux 4.07, and it provides the
+; same API and ABI (to e.g. COM32R .c32 programs) as Syslinux 4.07 does.
+;
+; liigmain.bin can be uncompressed (in this case it's the same file as
+; syslinux/core/ldlinux.raw from file offset 0x8800 in the Ligboot source
+; tree; typical size: 42128 bytes, too large for below) or compressed by
+; bmcompress.py (which invokes UPX under the hood; typical size: 33000
+; bytes). For testing purposes, a hello-world alternative is provided
+; (in file hiiimain.nasm; make hiiimain.bin, and use hiiimain.bin instead of
+; liigmain.bin; you may also compress it).
+;
+; The interface between liigboot_boot.nasm and liigmain.bin (either
+; uncompressed or compressed) is the following:
+;
+; * liigmain.bin must be between 0x52 (82) and 0x9c00 (39936) bytes long.
+; * liigmain.bin is loaded here (by the boot sector code in liigboot_boot.nasm)
+;   to address 0x8800 (LOAD_ADDR).
+; * Before jumping to the liigmain.bin code, the segment registers cs,
+;   ds, es and ss are set to 0, and sp is set to a bit below 0x7c00 (boot
+;   sector). The contents of other registers is undefined. sti and cld is in
+;   effect.
+; * The jump is equivalent to `jmp word 0:0x882c', i.e. the entry point in
+;   the file is at offset 0x2c.
+; * !! Segment .bss is not guaranteed to be initialized to 0. Is this a
+;   problem? How does ldlinux.bin cope with it?
+;
+; Notes related to compression:
+;
+; * For liigmain.bin to be compressible, from offset 0x2c it should look
+;   like:
+;
+;     dw 0x22eb
+;     times 16 dw 0x5b53
+;     dw 0xf4fa
+;
+;   This is 0x22 (36) bytes of 16-bit i386 executable code which does nothing,
+;   by jumping over itself. It is a placeholder in the uncompressed variant,
+;   and it's used by some trampoline code in the compressed variant.
+;
+; * Because of this restriction, useful code can start at file offset 0x50.
+;
+; * During decompression, the bytes above (0x24 bytes from offset 0x2c)
+;   will be overwritten by some garbage code, and their original contents
+;   won't be retained in memory. Everything else in the original liigmain.bin
+;   (i.e. bytes before offset 0x2c and bytes from offset 0x50) will be retained
+;   in memory by decompression. Bytes from offset 0x50 will be compressed in
+;   the file.
+;
+; * The first 0x2c bytes of liigmain.bin can be used for configuration, because
+;   these are identical in the uncompressed and compressed variants.
+;
+; !! 0x880 --> 0x800
+
+%ifndef LOAD_ADDR
+%fatal Run nasm -DLOAD_ADDR=0x...
+%endif
+; The memory address to which liigmain.bin is loaded. Please note that the
+; entry point is at offset 0x2c in the file, i.e. `jmp word 0:0x882c'.
+load_addr equ LOAD_ADDR
+
+%if load_addr < 0x8000 || load_addr > 0xffff || load_addr & 15
+%fatal Invalid load_addr.
+%endif
+
+push '~'  ; 2 bytes, for testing stacks. Not needed.
+jmp near load_addr + 0x2c  ; Same as jmp word 0:0x882c.
+;!! jmp 0:0x88b0  ; all_read, the entry point of syslinux/core/ldlinux.bin
 
 ; We have 40 bytes free for new code, but we don't need it.
 ; The region 0xda ... 0xe0 is reserved for the modern standard MBR.
@@ -226,11 +298,11 @@ times 0xda-($-$$) db 0
 
 times 0x1b8-16-($-$$) db 0
 ; https://en.wikipedia.org/wiki/INT_13H#INT_13h_AH.3D42h:_Extended_Read_Sectors_From_Drive
-; Disk Address Packet, for reading ldlinux.sys from disk. 16 bytes.
+; Disk Address Packet, for reading liigmain.bin from disk. 16 bytes.
 dap:
 dw 0x10
 dw 80 - 2  ; Number of sectors to load.
-dw 0, 0x880  ; segment:offset of 0x8800, that's where ldlinux.bin is loaded to.
+dw 0, load_addr >> 4  ; segment:offset where ldlinux.bin is loaded to.
 dq 2  ; Read from sector 2 (0x400), that's where ldlinux.bin starts.
 
 ; UUIDs and the parition table of a modern standard Master Boot Record (MBR).
@@ -265,13 +337,21 @@ times 0x200-($-$$) db 0  ; Doesn't add any additional bytes.
 
 %ifdef EMPTYFS
 
+%ifndef LIIGMAIN 
+; !! Use ldlinux.raw, compress liigmain.bin.
+%define LIIGMAIN 'syslinux/core/ldlinux.bin'  ; Uncompressed.
+%endif
+
 ; 1 sector (0x200...0x400) here is reserved for Syslinux ADV.
 times 0x400-($-$$) db 0
 ; TODO(pts): Make a copy of syslinux/core/ldlinux.bin for reproducible builds.
 ;            prebuilt/ldlinux.bin
 ;            prebuilt/libcomcore.a
 ;            prebuilt/libcore.a
-incbin "syslinux/core/ldlinux.bin"
+incbin LIIGMAIN
+
+;incbin 'hiiimain.compressed.bin'
+;incbin 'hiiimain.uncompressed.bin'
 times 0xa000-($-$$) db 0
 
 %ifdef LIIGRESC

@@ -33,4 +33,3 @@ libcore.a: $(LIBCOREOBJS)
 
 clean:
 	rm -f libcore.a $(LIBCOREOBJS) .*.o.d sys/.*.o.d libgcc/.*.o.d *.lst lzo/*.lst
-
