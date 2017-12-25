@@ -22,7 +22,7 @@ endif
 #export HEXDATE  # Doesn't show it explicily.
 
 ifeq ($(LOAD_ADDR),)
-LOAD_ADDR2 := 0x8800
+LOAD_ADDR2 := 0x8000
 else
 LOAD_ADDR2 := $(LOAD_ADDR)
 endif

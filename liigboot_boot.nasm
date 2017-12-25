@@ -227,24 +227,25 @@ sti
 ; same API and ABI (to e.g. COM32R .c32 programs) as Syslinux 4.07 does.
 ;
 ; liigmain.bin can be uncompressed (in this case it's the same file as
-; syslinux/core/ldlinux.raw from file offset 0x8800 in the Ligboot source
-; tree; typical size: 42128 bytes, too large for below) or compressed by
-; bmcompress.py (which invokes UPX under the hood; typical size: 33000
-; bytes). For testing purposes, a hello-world alternative is provided
-; (in file hiiimain.nasm; make hiiimain.bin, and use hiiimain.bin instead of
-; liigmain.bin; you may also compress it).
+; syslinux/core/ldlinux.raw from file offset 0x8000 (defined as LOAD_ADDR
+; and LOAD_ADDR2 in Makefile) in the Ligboot source tree; typical size:
+; 42128 bytes, too large for below) or compressed by bmcompress.py (which
+; invokes UPX under the hood; typical size: 28851 bytes). For testing
+; purposes, a hello-world alternative is provided (in file hiiimain.nasm;
+; make hiiimain.bin, and use hiiimain.bin instead of liigmain.bin; you may
+; also compress it).
 ;
 ; The interface between liigboot_boot.nasm and liigmain.bin (either
 ; uncompressed or compressed) is the following:
 ;
 ; * liigmain.bin must be between 0x52 (82) and 0x9c00 (39936) bytes long.
 ; * liigmain.bin is loaded here (by the boot sector code in liigboot_boot.nasm)
-;   to address 0x8800 (LOAD_ADDR).
+;   to address 0x8000 (LOAD_ADDR).
 ; * Before jumping to the liigmain.bin code, the segment registers cs,
 ;   ds, es and ss are set to 0, and sp is set to a bit below 0x7c00 (boot
 ;   sector). The contents of other registers is undefined. sti and cld is in
 ;   effect.
-; * The jump is equivalent to `jmp word 0:0x882c', i.e. the entry point in
+; * The jump is equivalent to `jmp word 0:0x802c', i.e. the entry point in
 ;   the file is at offset 0x2c.
 ; * There is no zero-initialization of the stack or .bss (i.e. the bytes
 ;   following liigmain.bin in memory), so liigmain.bin shouldn't rely on
@@ -278,13 +279,12 @@ sti
 ; * The first 0x2c bytes of liigmain.bin can be used for configuration, because
 ;   these are identical in the uncompressed and compressed variants.
 ;
-; !! 0x880 --> 0x800
 
 %ifndef LOAD_ADDR
 %fatal Run nasm -DLOAD_ADDR=0x...
 %endif
 ; The memory address to which liigmain.bin is loaded. Please note that the
-; entry point is at offset 0x2c in the file, i.e. `jmp word 0:0x882c'.
+; entry point is at offset 0x2c in the file, i.e. `jmp word 0:0x802c'.
 load_addr equ LOAD_ADDR
 
 %if load_addr < 0x8000 || load_addr > 0xffff || load_addr & 15
@@ -292,7 +292,7 @@ load_addr equ LOAD_ADDR
 %endif
 
 push '~'  ; 2 bytes, for testing stacks. Not needed.
-jmp near load_addr + 0x2c  ; Same as jmp word 0:0x882c.
+jmp near load_addr + 0x2c  ; Same as jmp word 0:0x802c.
 
 ; We have 40 bytes free for new code, but we don't need it.
 ; The region 0xda ... 0xe0 is reserved for the modern standard MBR.

@@ -1,6 +1,6 @@
 ; by pts@fazekas.hu at Mon Dec 25 04:22:48 CET 2017
 ; 
-; $ nasm -DLOAD_ADDR=0x8800 -f bin -o hiiimain.bin hiiimain.nasm
+; $ nasm -DLOAD_ADDR=0x8000 -f bin -o hiiimain.bin hiiimain.nasm
 ;
 
 bits 16

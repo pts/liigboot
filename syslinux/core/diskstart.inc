@@ -49,7 +49,7 @@ StackHome	equ Hidden		; The start of the canonical stack
 %fatal Run nasm -DLOAD_ADDR=0x...
 %endif
 		zb LOAD_ADDR-0x7c00-($-$$)
-load_addr:  ; 0x8800, -DLOAD_ADDR=0x8800
+load_addr:  ; 0x8000, -DLOAD_ADDR=0x8000
 
 ; At most 0x2c bytes of headers. Will be retained by both the compressed and
 ; the uncompressed variant.
@@ -185,9 +185,6 @@ kaboom:
 bailmsg:	db 'Boot error', 0Dh, 0Ah
 global SubvolName  ; Needed by fs/btrfs/btrfs.c .
 SubvolName      db 0
-
-;		zb 0x88b0-0x7c00-($-$$)
-;		zb 0x8970-0x7c00-($-$$)
 
 		section .text16
 all_read:

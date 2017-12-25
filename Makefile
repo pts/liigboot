@@ -11,7 +11,15 @@ HEXDATE2 := $(HEXDATE)
 endif
 
 ifeq ($(LOAD_ADDR),)
-LOAD_ADDR2 := 0x8800
+# The memory address to which the boot manager (syslinux/core/ldlinux.raw or
+# liigmain.bin) is loaded to. We don't want too early, we are still
+# retaining a copy of the MBR boot sector at 0x7c00...0x7e00, and reserving
+# 0x7e00...0x8000 for a future buffer sounds useful. Also below 0x7c00 some
+# initial variables are stored (see the `push dx'... instructions in
+# liigboot_boot.nasm).
+#
+# The default used to be 0x8800, it also works as well as 0x8000.
+LOAD_ADDR2 := 0x8000
 else
 LOAD_ADDR2 := $(LOAD_ADDR)
 endif
