@@ -34,6 +34,7 @@ def main(argv):
   #
   # TODO(pts): Make sure that the .bss is zeroed. How large is it?
   load_addr = None
+  skip0 = 0
   i = 1
   while i < len(argv):
     arg = argv[i]
@@ -44,6 +45,9 @@ def main(argv):
       output_filename = arg[arg.find('=') + 1:]
     elif arg.startswith('--load-addr='):
       load_addr = int(arg[arg.find('=') + 1:], 0)
+    elif arg.startswith('--skip0='):
+      # Skip this many \x00 bytes at start of --bin=.
+      skip0 = int(arg[arg.find('=') + 1:], 0)
     else:
       sys.exit('fatal: unknown command-line flag: ' + arg)
   if input_filename is None:
@@ -58,6 +62,14 @@ def main(argv):
     sys.exit('fatal: --load-addr outside its range: 0x%x', load_addr)
 
   text = open(input_filename, 'rb').read()
+  if skip0:
+    print >>sys.stderr, 'info: bmcompress input before skip: %s (%d bytes)' % (
+        input_filename, len(text))
+    if len(text) < skip0:
+      raise ValueError('Input too short for --skip0=')
+    if text[:skip0].lstrip('\0'):
+      raise ValueError('Nonzero bytes found in --skip0= region.')
+    text = text[skip0:]
   print >>sys.stderr, 'info: bmcompress input: %s (%d bytes)' % (
       input_filename, len(text))
   if text[44 : 80] != '\xeb\x22' + '\x53\x5b' * 16 + '\xfa\xf4':

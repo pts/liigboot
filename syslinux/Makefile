@@ -29,19 +29,15 @@ endif
 
 .PHONY: all clean
 
-all: version.gen version.h version.mk core/ldlinux.raw core/ldlinux.bin
+all: version.gen version.h version.mk core/ldlinux.raw
 
 # All dependencies are listed here.
 LDLINUX_RAW_TARGETS = core/ldlinux.raw core/ldlinux.elf core/ldlinux.lsr core/ldlinux.lst core/ldlinux.map core/ldlinux.o core/ldlinux.sec
 $(LDLINUX_RAW_TARGETS): version.gen version.h version.mk libcomcore/libcomcore.a libcore/libcore.a core/syslinux.ld core/ldlinux.asm $(wildcard core/*.inc)
 	$(MAKE) -C core $(notdir $(LDLINUX_RAW_TARGETS)) HEXDATE=$(HEXDATE2) LOAD_ADDR=$(LOAD_ADDR2)
-core/ldlinux.bin: core/ldlinux.raw lzo/prepcore
-	$(MAKE) -C core $(notdir $@)
-lzo/prepcore: lzo/prepcore.c lzo/prepcore_lzo.c lzo/prepcore_lzo.h lzo/prepcore_lzo_miniacc.h
-	$(MAKE) -C lzo $(notdir $@)
 libcomcore/libcomcore.a: $(wildcard libcomcore/include/*.[chsS] libcomcore/include/bitsize/*.[chsS] libcomcore/include/klibc/*.[chsS] libcomcore/include/sys/*.[chsS] libcomcore/libgcc/*.[chsS] libcomcore/sys/*.[chsS])
 	$(MAKE) -C libcomcore $(notdir $@)
-libcore/libcore.a: $(wildcard libcore/include/*.h libcore/lzo/*.ash libcore/lzo/*.[chsS] libcore/fs/*.[chsS] libcore/fs/*/*.[chsS] libcore/mem/*.[chsS]) libcore/codepage.cp
+libcore/libcore.a: $(wildcard libcore/include/*.h libcore/fs/*.[chsS] libcore/fs/*/*.[chsS] libcore/mem/*.[chsS]) libcore/codepage.cp
 	$(MAKE) -C libcore $(notdir $@)
 
 version.gen: version version.pl
@@ -53,7 +49,6 @@ version.mk: version version.pl
 
 clean:
 	rm -f version.gen version.h version.mk
-	$(MAKE) -C lzo clean
 	$(MAKE) -C core clean
 	$(MAKE) -C libcomcore clean
 	$(MAKE) -C libcore clean

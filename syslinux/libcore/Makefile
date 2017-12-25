@@ -12,15 +12,13 @@ LIBCOREOBJS = \
     fs/readdir.o mem/free.o mem/init.o mem/malloc.o fs/btrfs/btrfs.o \
     fs/ext2/bmap.o fs/ext2/ext2.o fs/fat/fat.o fs/lib/close.o \
     fs/lib/loadconfig.o fs/lib/mangle.o fs/lib/searchconfig.o fs/ntfs/ntfs.o \
-    codepage.o lzo/lzo1x_f1.o
+    codepage.o
 
 INCLUDES = -Iinclude -I../libcomcore/include
 
 HEADERS := $(wildcard include/*.h)
 
 all: libcore.a
-
-lzo/lzo1x_f1.o: lzo/enter.ash lzo/leave.ash lzo/lzo1x_d.ash
 
 codepage.o: codepage.cp
 
@@ -32,4 +30,4 @@ libcore.a: $(LIBCOREOBJS)
 	$(RANLIB) $@  
 
 clean:
-	rm -f libcore.a $(LIBCOREOBJS) .*.o.d sys/.*.o.d libgcc/.*.o.d *.lst lzo/*.lst
+	rm -f libcore.a $(LIBCOREOBJS) .*.o.d sys/.*.o.d libgcc/.*.o.d *.lst

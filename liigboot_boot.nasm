@@ -246,8 +246,12 @@ sti
 ;   effect.
 ; * The jump is equivalent to `jmp word 0:0x882c', i.e. the entry point in
 ;   the file is at offset 0x2c.
-; * !! Segment .bss is not guaranteed to be initialized to 0. Is this a
-;   problem? How does ldlinux.bin cope with it?
+; * There is no zero-initialization of the stack or .bss (i.e. the bytes
+;   following liigmain.bin in memory), so liigmain.bin shouldn't rely on
+;   any particular memory block being 0 -- it can contain garbage such as
+;   decompression artifacts. However, for 32-biy (PM) Syslinux code,
+;   pm_zerobss in syslinux/core/init.inc initializes .bss to 0,
+;   so C code should be fine.
 ;
 ; Notes related to compression:
 ;
@@ -289,7 +293,6 @@ load_addr equ LOAD_ADDR
 
 push '~'  ; 2 bytes, for testing stacks. Not needed.
 jmp near load_addr + 0x2c  ; Same as jmp word 0:0x882c.
-;!! jmp 0:0x88b0  ; all_read, the entry point of syslinux/core/ldlinux.bin
 
 ; We have 40 bytes free for new code, but we don't need it.
 ; The region 0xda ... 0xe0 is reserved for the modern standard MBR.
@@ -348,10 +351,13 @@ times 0x400-($-$$) db 0
 ;            prebuilt/ldlinux.bin
 ;            prebuilt/libcomcore.a
 ;            prebuilt/libcore.a
+;incbin 'syslinux/core/ldlinux.raw', LOAD_ADDR  ; Uncompressed, but too large.
 incbin LIIGMAIN
 
 ;incbin 'hiiimain.compressed.bin'
 ;incbin 'hiiimain.uncompressed.bin'
+; If nasm reports `error: TIMES value -... is negative' here, then the file
+; LIIGMAIN is too long.
 times 0xa000-($-$$) db 0
 
 %ifdef LIIGRESC

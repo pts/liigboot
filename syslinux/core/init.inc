@@ -23,10 +23,9 @@ common_init:
 		; Initialize PM invocation framework
 		call pm_init
 
-		; Decompress PM code to its target location
-		pm_call pm_decompress
-		cmp eax,__pm_code_len
-		jne kaboom
+		; Copy PM code to its target location.
+		; (used to be pm_decompress and used to do LZO decompression).
+		pm_call pm_copycode
 
 ;
 ; Initialize timer
@@ -103,20 +102,17 @@ err_noram	db 'It appears your computer has only '
 ;
 ; The code to decompress the PM code and initialize other segments.
 ;
-		extern _lzo1x_decompress_asm_fast
 
 		section .textnr
 		bits 32
-pm_decompress:
-		push 0				; Space for decompressed size
-		push esp			; Pointer to previous word
-		push __pm_code_start		; Target address
-		push dword [lzo_data_size]	; Compressed size
-		push dword __pm_code_lma
-		call _lzo1x_decompress_asm_fast
-		add esp,16
-		pop RM_EAX			; Decompressed size
 
+pm_copycode:
+		mov esi, __pm_code_lma
+		mov edi, __pm_code_start
+		mov ecx, __pm_code_dwords
+		rep movsd
+		; Fall through to pm_zerobss.
+pm_zerobss:
 		; Zero bss sections (but not .earlybss, since it may
 		; contain already-live data.)
 		xor eax,eax

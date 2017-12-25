@@ -18,7 +18,8 @@ endif
 
 # Can be overridden on the command-line:
 # * make liigboot.zip LIIGMAIN=hiiimain.compressed.bin
-LIIGMAIN := syslinux/core/ldlinux.bin
+# Compressed.
+LIIGMAIN := liigmain.bin
 
 BOOT_DEFINES = -DLOAD_ADDR=$(LOAD_ADDR2)
 EMPTYFS_DEFINES = $(BOOT_DEFINES) -DEMPTYFS -DLIIGMAIN="'$(LIIGMAIN)'"
@@ -59,24 +60,22 @@ liigboot.img.install.debug: install.c
 liigboot.zip: liigboot.img liigboot.img.install mkzip.py
 	python mkzip.py --do-add-install-zip --mtime=$(HEXDATE2) liigboot.img
 
-liigmain.bin: syslinux/core/ldlinux.bin bmcompress.py
-	python bmcompress.py --bin=syslinux/core/ldlinux.bin --out=$@ --load-addr=$(LOAD_ADDR2)
+liigmain.bin: syslinux/core/ldlinux.raw bmcompress.py
+	python bmcompress.py --bin=$< --out=$@ --load-addr=$(LOAD_ADDR2) --skip0=$(LOAD_ADDR2)
 .PRECIOUS: hiiimain.compressed.bin
 %.compressed.bin: %.uncompressed.bin bmcompress.py
 	python bmcompress.py --bin=$< --out=$@ --load-addr=$(LOAD_ADDR2)
 
 # All dependencies are listed here.
-LDLINUX_BIN_TARGETS = core/ldlinux.bin core/ldlinux.raw core/ldlinux.elf core/ldlinux.lsr core/ldlinux.lst core/ldlinux.map core/ldlinux.o core/ldlinux.sec
+LDLINUX_BIN_TARGETS = core/ldlinux.raw core/ldlinux.elf core/ldlinux.lsr core/ldlinux.lst core/ldlinux.map core/ldlinux.o core/ldlinux.sec
 $(addprefix syslinux/,$(LDLINUX_BIN_TARGETS)): syslinux/libcomcore/libcomcore.a syslinux/libcore/libcore.a syslinux/core/syslinux.ld syslinux/core/ldlinux.asm $(wildcard syslinux/core/*.inc)
 	$(MAKE) -C syslinux $(LDLINUX_BIN_TARGETS) HEXDATE=$(HEXDATE2) LOAD_ADDR=$(LOAD_ADDR2)
 SYSLINUX_VERSION_TARGETS = version.gen version.h version.mk
 $(addprefix syslinux/,$(SYSLINUX_VERSION_TARGETS)): syslinux/version syslinux/version.pl
 	$(MAKE) -C syslinux $(SYSLINUX_VERSION_TARGETS)
-syslinux/lzo/prepcore: syslinux/lzo/prepcore.c syslinux/lzo/prepcore_lzo.c syslinux/lzo/prepcore_lzo.h syslinux/lzo/prepcore_lzo_miniacc.h
-	$(MAKE) -C syslinux lzo/prepcore
 syslinux/libcomcore/libcomcore.a: $(wildcard $(addprefix syslinux/,libcomcore/include/*.[chsS] libcomcore/include/bitsize/*.[chsS] libcomcore/include/klibc/*.[chsS] libcomcore/include/sys/*.[chsS] libcomcore/libgcc/*.[chsS] libcomcore/sys/*.[chsS]))
 	$(MAKE) -C syslinux libcomcore/libcomcore.a
-syslinux/libcore/libcore.a: $(wildcard $(addprefix syslinux/,libcore/include/*.h libcore/lzo/*.ash libcore/lzo/*.[chsS] libcore/fs/*.[chsS] libcore/fs/*/*.[chsS] libcore/mem/*.[chsS] libcore/codepage.cp))
+syslinux/libcore/libcore.a: $(wildcard $(addprefix syslinux/,libcore/include/*.h libcore/fs/*.[chsS] libcore/fs/*/*.[chsS] libcore/mem/*.[chsS] libcore/codepage.cp))
 	$(MAKE) -C syslinux libcore/libcore.a
 
 clean:

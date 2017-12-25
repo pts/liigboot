@@ -50,8 +50,6 @@ LIBOBJS	 = $(COBJ) $(SOBJ)
 NASMDEBUG = -g -F dwarf
 NASMOPT  += $(NASMDEBUG)
 
-PREPCORE = ../lzo/prepcore
-
 # core/ldlinux.bss: 0x7d2f: dd LDLINUX_MAGIC^HEXDATE
 # LDLINUX_MAGIC equ 0x3EB202FE
 # syslinux-4.07/core/ldlinux.bss: LDLINUX_MAGIC^HEXDATE == 0x6f42f3a1  ; HEXDATE := 0x51f0f15f
@@ -68,7 +66,7 @@ else
 LOAD_ADDR2 := $(LOAD_ADDR)
 endif
 
-all: ldlinux.bin
+all: ldlinux.raw
 
 kwdhash.gen: keywords genhash.pl
 	$(PERL) genhash.pl < keywords > kwdhash.gen
@@ -84,9 +82,6 @@ kwdhash.gen: keywords genhash.pl
 # Don't remove this temporary build artifact (%.o).
 .PRECIOUS: %.o
 
-%.bin: %.raw $(PREPCORE)
-	$(PREPCORE) $< $@
-
 %.o %.lsr: %.asm kwdhash.gen ../version.gen $(NASMHDR)
 	$(NASM) -f elf $(NASMOPT) -DDATE_STR="'$(HEXDATE2)'" -DHEXDATE="$(HEXDATE2)" -DLOAD_ADDR=$(LOAD_ADDR) -l $(<:.asm=.lsr) -o $(<:.asm=.o) -MP -MD .$(<:.asm=.o).d $<
 
@@ -94,11 +89,6 @@ kwdhash.gen: keywords genhash.pl
 	$(LD) $(LDFLAGS) -T syslinux.ld -M -o $(<:.o=.elf) $< --start-group $(LIBS) --end-group > $(<:.o=.map)
 	$(OBJDUMP) -h $(<:.o=.elf) > $(@:.elf=.sec)
 	$(PERL) lstadjust.pl $(<:.o=.lsr) $(<:.o=.sec) $(<:.o=.lst)
-
-#$(LIB): $(LIBOBJS)
-#	rm -f $@
-#	$(AR) cq $@ $^
-#	$(RANLIB) $@
 
 codepage.cp: ../codepage/$(CODEPAGE).cp
 	cp -f $< $@
@@ -109,4 +99,4 @@ codepage.o: codepage.S codepage.cp
 #-include .*.d */.*.d */*/.*.d
 
 clean:
-	rm -f ldlinux.o ldlinux.elf ldlinux.lst ldlinux.lsr ldlinux.raw ldlinux.map ldlinux.sec ldlinux.bin .*.d
+	rm -f ldlinux.o ldlinux.elf ldlinux.lst ldlinux.lsr ldlinux.raw ldlinux.map ldlinux.sec ldlinux.bin ldlinux.sys ldlinux.bss .*.d

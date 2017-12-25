@@ -27,7 +27,10 @@ display /i ($cs*16)+$pc
 # `break bootsec' doesn't work.
 # `break *&bootsec' is equivalent to `break *0x7c00'.
 break *&bootsec
-#break *0x88b0
+break *&_start
+# This is the address of `jmp near all_read', but we don't set a breakpoint
+# here, because UPX loops back too many times.
+#break *(&_start+0x24)
 break *&all_read
 set pagination off
 # Like `c' and `cont' and `conti', but print registers and memory as well.
