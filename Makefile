@@ -32,7 +32,7 @@ LIIGMAIN := liigmain.bin
 BOOT_DEFINES = -DLOAD_ADDR=$(LOAD_ADDR2)
 EMPTYFS_DEFINES = $(BOOT_DEFINES) -DEMPTYFS -DLIIGMAIN="'$(LIIGMAIN)'"
 
-all: liigresc_bs.bin liigboot_bs.bin
+all: liigboot.zip
 
 liigresc_bs.bin: liigboot_boot.nasm
 	nasm -f bin -o $@ -DLIIGRESC $(BOOT_DEFINES) liigboot_boot.nasm
