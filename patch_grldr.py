@@ -55,8 +55,43 @@ def patch_menu(data, menu_data):
   return ''.join((data[:i + 1], menu_data, '\0'))
 
 
+def patch_loader(stage2_data, loader_data):
+  if not loader_data.startswith('\xeb\x3c\x90'):
+    raise ValueError('Missing loader signature.')
+  if len(loader_data) != 0x600:
+    raise ValueError('Bad loader size.')
+  if (stage2_data[0x00 : 0x00 + 2] != '\xea\x70' or
+      stage2_data[0x06 : 0x06 + 2] != '\3\2' or
+      stage2_data[0x12 : 0x12 + 5] != '0.97\0' or
+      stage2_data[0x10] != '\0'):
+    raise ValueError('Missing pre_stage2.')
+  if not stage2_data.endswith('\0'):
+    raise ValueError('Missing trailing \\0.')
+
+  # Also called preset_menu and PRESENT_MENU_STRING in the GRUB4DOS sources.
+  fallback_menu_ofs = stage2_data.rfind('\0', 0, len(stage2_data) - 1) + 1
+  if fallback_menu_ofs <= 0:
+    raise ValueError('Missing beginning of fallback_menu.')
+  if (stage2_data[fallback_menu_ofs : fallback_menu_ofs + 11] !=
+      'root (hd0)\n'):
+    raise ValueError('Missing root (hd0) directive in fallback_menu.')
+  stage2_data_ary = array.array('B', stage2_data)
+
+  def set_in_stage2(ofs, data):
+    stage2_data_ary[ofs : ofs + len(data)] = array.array('B', data)
+
+  stage2_data_ary[0x5] |= (
+       1  |  # Disable PXE.
+       8)  # Disable geometry-tune.
+  stage2_data_ary[0x11] = 1  # Force LBA.
+  set_in_stage2(0xc, '\0\0\0\0')  # Clear saved_entryno, useless.
+  # Default `configfile' argument.
+  set_in_stage2(0x17, '/menu.lst\0\0\0\0\0\0\0\0\0\0\0')
+  return loader_data + stage2_data_ary.tostring()
+
+
 def main(argv):
-  input_filename = output_filename = menu_filename = None
+  input_filename = output_filename = menu_filename = loader_filename = None
   # The in-memory address where the input_filename (starting with the nop*k
   # header) will be loaded. Please note that the nop*k header may be
   # replaced by something else at load time.
@@ -74,12 +109,16 @@ def main(argv):
       output_filename = arg[arg.find('=') + 1:]
     elif arg.startswith('--menu='):
       menu_filename = arg[arg.find('=') + 1:]
+    elif arg.startswith('--loader='):
+      loader_filename = arg[arg.find('=') + 1:]
     else:
       sys.exit('fatal: unknown command-line flag: ' + arg)
   if output_filename is None:
     sys.exit('fatal: missing --out=')
   if menu_filename is None:
     sys.exit('fatal: missing --menu=')
+  if input_filename is not None and loader_filename is None:
+    sys.exit('fatal: missing --loader=')
 
   menu_data = open(menu_filename, 'rb').read()
   menu_data = simplify_menu(menu_data)
@@ -88,9 +127,21 @@ def main(argv):
     print >>sys.stderr, 'info: creating menu file: %s' % output_filename
     open(output_filename, 'wb').write(menu_data)
   else:
+    loader_data = open(loader_filename, 'rb').read()
+    if not loader_data.startswith('\xeb\x3c\x90'):
+      raise ValueError('Missing loader signature.')
+    if len(loader_data) != 0x600:
+      raise ValueError('Bad loader size.')
+    # This is needed, otherwise GRUB4DOS can't find the default drive.
+    menu_data = 'root (hd0)\n' + menu_data
     data = open(input_filename, 'rb').read()
     if not data.startswith('\xeb\x3e\x80'):
-      raise ValueError('Not a grldr file.')
+      raise ValueError('Missing grldr signature.')
+    if (data[0x2000 : 0x2000 + 2] != '\xea\x70' or
+        data[0x2006 : 0x2006 + 2] != '\3\2' or
+        data[0x2012 : 0x2012 + 5] != '0.97\0'):
+      raise ValueError('Missing pre_stage2.')
+
     patches = (
         # This is to prevent the error message
         # "The BPB hidden_sectors should not be zero..." (ERR_HD_VOL_START_0).
@@ -107,6 +158,8 @@ def main(argv):
     )
     data = patch_code(data, patches)
     data = patch_menu(data, menu_data)
+    data = patch_loader(data[0x2000:], loader_data)
+
     print >>sys.stderr, 'info: creating grldr file: %s' % output_filename
     open(output_filename, 'wb').write(data)
 

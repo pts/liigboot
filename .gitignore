@@ -39,8 +39,10 @@ hiiimain.uncompressed.bin
 hiiimain.compressed.bin
 random.bin
 liigmain.bin
-grldr
+grub4dos.bs
 syslinux.cfg.simplified
 menu.lst.simplified
 mcopy.tmp
 *.tmp
+grub_loader.bin
+

@@ -42,11 +42,13 @@ endif
 all: liigboot.zip
 
 liigresc_bs.bin: liigboot_boot.nasm
-	nasm -f bin -o $@ -DLIIGRESC $(BOOT_DEFINES) liigboot_boot.nasm
+	nasm -f bin -o $@ -DLIIGRESC $(BOOT_DEFINES) $<
 liigboot_bs.bin: liigboot_boot.nasm
-	nasm -f bin -o $@ -DLIIGBOOT $(BOOT_DEFINES) liigboot_boot.nasm
+	nasm -f bin -o $@ -DLIIGBOOT $(BOOT_DEFINES) $<
 hiiimain.uncompressed.bin: hiiimain.nasm
-	nasm -f bin -o $@ $(BOOT_DEFINES) hiiimain.nasm
+	nasm -f bin -o $@ $(BOOT_DEFINES) $<
+grub_loader.bin: grub_loader.nasm
+	nasm -f bin -o $@ $<
 
 liigresc_empty.img: liigboot_boot.nasm $(LIIGMAIN)
 	nasm -f bin -o $@ -DLIIGRESC $(EMPTYFS_DEFINES) liigboot_boot.nasm
@@ -55,11 +57,11 @@ liigboot_empty.img: liigboot_boot.nasm $(LIIGMAIN)
 
 .PRECIOUS: liigboot.img
 .PRECIOUS: liigresc.img
-%.zip: %_empty.img external/memtest86+-5.01.kernel syslinux.cfg.simplified menu.lst.simplified grldr mkzip.py liigboot.img.install
+%.zip: %_empty.img external/memtest86+-5.01.kernel syslinux.cfg.simplified menu.lst.simplified grub4dos.bs mkzip.py liigboot.img.install
 	cp -a $< $@.tmp
 	python copy_to_fat.py --img=$@.tmp --in=syslinux.cfg.simplified --out=syslinux.cfg      --mtime=$(HEXDATE2)
 	python copy_to_fat.py --img=$@.tmp --in=menu.lst.simplified     --out=menu.lst          --mtime=$(HEXDATE2)
-	python copy_to_fat.py --img=$@.tmp --in=grldr                   --out=grldr             --mtime=$(HEXDATE2)
+	python copy_to_fat.py --img=$@.tmp --in=grub4dos.bs             --out=grub4dos.bs       --mtime=$(HEXDATE2)
 	python copy_to_fat.py --img=$@.tmp --in=external/memtest86+-5.01.kernel --out=memtest.k --mtime=$(HEXDATE2)
 	python mkzip.py --do-add-install-zip --install=liigboot.img.install --mtime=$(HEXDATE2) --img=$@.tmp
 	mv $@.tmp $@
@@ -91,13 +93,13 @@ syslinux/libcomcore/libcomcore.a: $(wildcard $(addprefix syslinux/,libcomcore/in
 syslinux/libcore/libcore.a: $(wildcard $(addprefix syslinux/,libcore/include/*.h libcore/fs/*.[chsS] libcore/fs/*/*.[chsS] libcore/mem/*.[chsS] libcore/codepage.cp))
 	$(MAKE) -C syslinux libcore/libcore.a
 
-grldr: external/grub4dos-0.4.4.grldr fallback_menu.lst patch_grldr.py
-	python patch_grldr.py --out=$@ --in=$< --menu=fallback_menu.lst
+grub4dos.bs: external/grub4dos-0.4.4.grldr fallback_menu.lst patch_grldr.py grub_loader.bin
+	python patch_grldr.py --out=$@ --in=$< --menu=fallback_menu.lst --loader=grub_loader.bin
 .PRECIOUS: syslinux.cfg.simplified
 .PRECIOUS: menu.lst.simplified
 %.simplified: % patch_grldr.py
 	python patch_grldr.py --out=$@ --menu=$<
 
 clean:
-	rm -f liigresc_bs.bin liigboot_bs.bin liigresc_empty.img liigboot_empty.img liigboot.img liigboot.zip.tmp liigresc.zip.tmp liigboot.img.install liigboot.zip.tmp.ziptmp liigresc.zip.tmp.ziptmp liigboot.zip mcopy.tmp liigmain.bin hiiimain.uncompressed.bin hiiimain.compressed.bin grldr syslinux.cfg.simplified menu.lst.simplified
+	rm -f liigresc_bs.bin liigboot_bs.bin liigresc_empty.img liigboot_empty.img liigboot.img liigboot.zip.tmp liigresc.zip.tmp liigboot.img.install liigboot.zip.tmp.ziptmp liigresc.zip.tmp.ziptmp liigboot.zip mcopy.tmp liigmain.bin hiiimain.uncompressed.bin hiiimain.compressed.bin grldr syslinux.cfg.simplified menu.lst.simplified grub4dos.bs
 	$(MAKE) -C syslinux clean

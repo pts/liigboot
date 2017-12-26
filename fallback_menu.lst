@@ -1,8 +1,6 @@
 ## Boot-time config of GRUB4DOS grldr, if menu.lst is not found.
 ## by pts@fazekas.hu at Mon Dec 25 16:30:41 CET 2017
 
-## This is needed, otherwise GRUB4DOS can't find the default drive.
-root (hd0)
 ## Try to find /menu.lst , and stop if found.
 configfile
 ##default 0
