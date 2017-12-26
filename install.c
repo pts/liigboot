@@ -1,4 +1,5 @@
 /* by pts@fazekas.hu at Thu Dec 21 23:15:28 CET 2017 */
+/* !! does fsync on the block device make a difference? do sync()? */
 #ifdef __LINTINY__
 #include <lintiny.h>
 #else
