@@ -21,3 +21,7 @@ title reboot
 
 title halt
 	halt
+
+title reload GRUB4DOS
+	chainloader --force /grub4dos.bs
+	boot
