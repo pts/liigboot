@@ -134,7 +134,6 @@ def compress(text, load_addr, tmp_filename, method='--ultra-brute'):
     raise ValueError('Expected ip=0 from UPX.')
   if h['cs'] != 0:
     raise ValueError('Expected cs=0 from UPX.')
-  os.unlink(tmp_filename)
   data_ary = array.array('B', data[0x20:])
   relocpos = h['relocpos']
   extra_code1_size = 40
@@ -143,7 +142,9 @@ def compress(text, load_addr, tmp_filename, method='--ultra-brute'):
   sp_addr = None
   # !! Make method == '--lzma' work (currently it emits h['nreloc'] == 0).
   #    Fixing up the ss and ss afterwards will need >=6 bytes more space.
+  #    The absolute jump \xea is also missing.
   assert h['nreloc'] == 1, h['nreloc']  # We want it, for setting sp_addr.
+  os.unlink(tmp_filename)
   for _ in xrange(h['nreloc']):
     # !! Compile without knowing load_addr (or load_seg).
     rofs, rseg = struct.unpack('<HH', data[relocpos : relocpos + 4])
@@ -242,7 +243,7 @@ def main(argv):
   print >>sys.stderr, 'info: bmcompress input: %s (%d bytes)' % (
       input_filename, len(text))
   tmp_filename = output_filename + '.tmp'
-  text = compress(text, load_addr, '--ultra-brute')
+  text = compress(text, load_addr, tmp_filename, '--ultra-brute')
   # !! If compressed is longer than original, emit original.
   # ndisasm -b 16 -o $(LOAD_ADDR) -e 0x2c hiiimain.uncompressed.bin
   open(output_filename, 'wb').write(text)
