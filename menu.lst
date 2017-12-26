@@ -1,8 +1,6 @@
 # Boot-time config file of GRUB4DOS grldr.
 ## by pts@fazekas.hu at Mon Dec 25 16:30:41 CET 2017
 
-## This is needed, otherwise GRUB4DOS can't find the default drive.
-root (hd0)
 default 0
 ## Measured in seconds.
 timeout 10

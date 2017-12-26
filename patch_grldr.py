@@ -31,6 +31,7 @@ def simplify_menu(menu_data):
 
   Removes whitespace and ## comments."""
   output = []
+  do_remove = True
   for line in menu_data.replace('\r', '\n').split('\n'):
     line = line.strip()
     if '\0' in line:
@@ -38,8 +39,11 @@ def simplify_menu(menu_data):
     if line and not line.startswith('##'):
       cmd = line.split(None, 1)[0].lower()
       if cmd in ('title', 'label'):
+        do_remove = False
         output.append('\n')
-      output.append(line + '\n')
+      # This is not needed by GRUB4DOS anymore, removing it.
+      if not (do_remove and line == 'root (hd0)'):
+        output.append(line + '\n')
   return ''.join(output)
 
 
@@ -72,9 +76,7 @@ def patch_loader(stage2_data, loader_data):
   fallback_menu_ofs = stage2_data.rfind('\0', 0, len(stage2_data) - 1) + 1
   if fallback_menu_ofs <= 0:
     raise ValueError('Missing beginning of fallback_menu.')
-  if (stage2_data[fallback_menu_ofs : fallback_menu_ofs + 11] !=
-      'root (hd0)\n'):
-    raise ValueError('Missing root (hd0) directive in fallback_menu.')
+  # fallback_menu_addr = fallback_menu_ofs + 0x8200
   stage2_data_ary = array.array('B', stage2_data)
 
   def set_in_stage2(ofs, data):
@@ -84,7 +86,9 @@ def patch_loader(stage2_data, loader_data):
        1  |  # Disable PXE.
        8)  # Disable geometry-tune.
   stage2_data_ary[0x11] = 1  # Force LBA.
-  set_in_stage2(0xc, '\0\0\0\0')  # Clear saved_entryno, useless.
+  # Clear saved_entryno, useless. First I thought it was useless,
+  # but it has the positive side effect of an implicit `root (hd0)'.
+  set_in_stage2(0xc, '\0\0\0\0')
   # Default `configfile' argument.
   set_in_stage2(0x17, '/menu.lst\0\0\0\0\0\0\0\0\0\0\0')
   return loader_data + stage2_data_ary.tostring()
@@ -132,8 +136,6 @@ def main(argv):
       raise ValueError('Missing loader signature.')
     if len(loader_data) != 0x600:
       raise ValueError('Bad loader size.')
-    # This is needed, otherwise GRUB4DOS can't find the default drive.
-    menu_data = 'root (hd0)\n' + menu_data
     data = open(input_filename, 'rb').read()
     if not data.startswith('\xeb\x3e\x80'):
       raise ValueError('Missing grldr signature.')

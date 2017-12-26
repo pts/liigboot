@@ -2,9 +2,6 @@
 ##
 ## Unused in Liigboot, just kept here for reference.
 
-## Not there by default.
-root (hd0)
-
 pxe detect
 configfile
 default 0
