@@ -75,6 +75,70 @@ def patch_loader(stage2_data, loader_data):
   if not stage2_data.endswith('\0'):
     raise ValueError('Missing trailing \\0.')
 
+  # Layout of GRUB pre_stage2.
+  #
+  # It is based in stage2/asm.S, stage2/builtins.c etc. in the GRUG4DOS sources.
+  #
+  # 0x00: jmp word 0:0x8270
+  # 0x05: db 0
+  #        bit 0 = 1: disable pxe in stage2/common.c: if (! ((*(char *)0x8205) & 0x01))   /* if it is not disable pxe */
+  #        bit 1 = 1: disable keyboard intervention in boot process
+  #        bit 2 = 1: disable the "unconditional command-line entrance" (UCE) feature; disabling it is DUCE
+  #        bit 3 = 1: disable geometry tune; chs-no-tune; don't call geometry_tune !! what does it mean?
+  # 0x06: db 3, 2  ; Compatibility version number: COMPAT_VERSION_MAJOR, COMPAT_VERSION_MINOR
+  #       from stage2/builtins.c:
+  #       (*((short *) (stage2_second_buffer + STAGE2_VER_MAJ_OFFS)) != COMPAT_VERSION)
+  # 0x08: dd 0xffffff  ; install_partition; STAGE2_INSTALLPART !! how is this used?
+  #       the paritition number is acually at the byte 0x0a (0-based offset)
+  #        grub_printf ("(%cd%d", (current_drive & 0x80) ? 'h' : 'f', current_drive & ~0x80);
+  #        if ((current_partition & 0xFF0000) != 0xFF0000)
+  #            grub_printf (",%d", (current_partition >> 16) & 0xFF);  /* partition number */
+  #        if ((current_partition & 0x00FF00) != 0x00FF00)
+  #            grub_printf (",%c", 'a' + ((current_partition >> 8) & 0xFF));
+  #        grub_printf (")");
+  #       printf ("Partition type for (hd%d,%d) is 0x%X.\n", (current_drive & 0x7F), (current_partition >> 16), new_type);
+  #       movb    %dh, 0x820A     /* this is the boot partition number */
+  #       #define STAGE2_INSTALLPART      0x8
+  # 0x0c: dd 0x84cc  ; saved_entryno pointing to preset_menu  ; !! GRUB4DOS-specific commandline preset_menu
+  #       !! what is the built-in preset_menu??
+  #       !! it's also called saved_entryno, STAGE2_SAVED_ENTRYNO
+  #       !! (0 = cleared; common.c)
+  #       mem addr 0x84cc is at file offset 0x8cc: dd 0x3b25c
+  #       preset_menu is at file offset 0x3366c; mem addr 0x3b26c
+  #       \x6c\xb2\x03\x00
+  #       Note: GRUB for DOS uses this for the commandline preset_menu.
+  #       A preset_menu can be embedded in the commandline of GRUB.EXE.
+  #       This new preset_menu overrides the built-in preset_menu.
+  #       If the variable is not touched, and the first byte at config_file is 0,
+  #       then the new menu at 0x0800 will work.
+  #       If the variable here is cleared to 0, or the first byte at config_file is
+  #       not 0, then the built-in preset_menu will work.
+  #       ; clear saved_entryno so that force_cdrom_as_boot_device be cleared
+  #       ; later in common.c
+  #       movl    %ebp, 0x820C    /* EBP=0, clear saved_entryno */
+  #       #define STAGE2_SAVED_ENTRYNO    0xc
+  # 0x10: db 0  ; STAGE2_ID_STAGE2
+  # 0x11: db 0  ; force_lba
+  # 0x12: db '0.97', 0  ; Version string. Ubuntu stage2 has the same.
+  #       #define STAGE2_VER_STR_OFFS     0x12
+  # 0x17: db '/boot/grub/menu.lst', 0  ; Default config file name. The command `configfile' without arguments will load this as default argument. May or may not start with (hd0)/... etc.
+  # 0x2b: db 0, ...
+  # 0x6c: dd 0x3b25c  ; __bss_start, same as edata
+  # 0x70: db 0xeb, 0x4e  ; jmp short 0x82c0 ; real_codestart
+  # 0x72: ... padding of db 0, ...
+  # 0x80: dd 0  ; boot_drive  (will be set in asm.S)
+  # 0x84: dd 0  ; pxe_yip
+  # 0x88: dd 0  ; pxe_sip
+  # 0x8c: dd 0  ; pxe_gip
+  # 0x90: dq 0  ; filesize
+  # 0x94: dd 0  ; saved_mem_upper
+  # 0x98: dd 0  ; saved_partition
+  # 0x9c: dd 0  ; saved_drive
+  # 0xa0: dd 0  ; no_decompression
+  # 0xa4: ... padding of db 0, ...
+  # 0xc0: 0xfa, 0xfc ; cli; cld ... boot code starts here
+
+
   # Also called preset_menu and PRESENT_MENU_STRING in the GRUB4DOS sources.
   fallback_menu_ofs = stage2_data.rfind('\0', 0, len(stage2_data) - 1) + 1
   if fallback_menu_ofs <= 0:
@@ -145,7 +209,7 @@ def compress_bs(data, tmp_filename, bs_load_addr=0x7c00, _mod_dict={}):
   print >>sys.stderr, 'info: load_addr=%0x' % load_addr
   if load_addr & 15:
     raise ValueError('load_addr not aligned to 16 bytes.')
-  method = '--ultra-brute'  # !! Try both '--ultra-brute --lzma'.
+  method = '--ultra-brute'  # TODO(pts): Try both '--ultra-brute --lzma'.
   #method = '--lzma'  # Doesn't work, h['nreloc'] == 0
   # Some stats about grub4dos.bs:
   # 211437 bytes: uncompressed
