@@ -11,6 +11,17 @@ timeout 3
 
 title find and use menu.lst on any hard drive
 	errorcheck off
+	configfile /menu.lst
+	ls (hd0)/menu.lst && root (hd0)
+	configfile /menu.lst
+	ls (hd1)/menu.lst && root (hd1)
+	configfile /menu.lst
+	ls (hd2)/menu.lst && root (hd2)
+	configfile /menu.lst
+	ls (hd3)/menu.lst && root (hd3)
+	configfile /menu.lst
+	ls (hd4)/menu.lst && root (hd4)
+	configfile /menu.lst
 	find --set-root --ignore-floppies --ignore-cd /menu.lst && configfile /menu.lst
 	find --set-root --ignore-floppies --ignore-cd /boot/grub/menu.lst && configfile /boot/grub/menu.lst
 	find --set-root --ignore-floppies --ignore-cd /grub/menu.lst && configfile /grub/menu.lst
