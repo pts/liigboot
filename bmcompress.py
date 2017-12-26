@@ -5,6 +5,7 @@
 
 import array
 import os
+import os.path
 import struct
 import sys
 import subprocess
@@ -25,55 +26,23 @@ def dump_header(fields, data):
   return h
 
 
-def main(argv):
-  input_filename = None
-  output_filename = None
-  # The in-memory address where the input_filename (starting with the nop*k
-  # header) will be loaded. Please note that the nop*k header may be
-  # replaced by something else at load time.
-  #
-  # TODO(pts): Make sure that the .bss is zeroed. How large is it?
-  load_addr = None
-  skip0 = 0
-  i = 1
-  while i < len(argv):
-    arg = argv[i]
-    i += 1
-    if arg.startswith('--bin='):
-      input_filename = arg[arg.find('=') + 1:]
-    elif arg.startswith('--out='):
-      output_filename = arg[arg.find('=') + 1:]
-    elif arg.startswith('--load-addr='):
-      load_addr = int(arg[arg.find('=') + 1:], 0)
-    elif arg.startswith('--skip0='):
-      # Skip this many \x00 bytes at start of --bin=.
-      skip0 = int(arg[arg.find('=') + 1:], 0)
-    else:
-      sys.exit('fatal: unknown command-line flag: ' + arg)
-  if input_filename is None:
-    sys.exit('fatal: missing --bin=')
-  if output_filename is None:
-    sys.exit('fatal: missing --out=')
-  if load_addr is None:
-    sys.exit('fatal: missing --load-addr=')
-  if load_addr & (0x10 - 1):
-    sys.exit('fatal: --load-addr not divisible by 0x10: 0x%x', load_addr)
-  if not (0x8000 <= load_addr <= 0xffff):
-    sys.exit('fatal: --load-addr outside its range: 0x%x', load_addr)
+SIGNATURE_OFS = 44
+SIGNATURE = '\xeb\x22' + '\x53\x5b' * 16 + '\xfa\xf4'
 
-  text = open(input_filename, 'rb').read()
-  if skip0:
-    print >>sys.stderr, 'info: bmcompress input before skip: %s (%d bytes)' % (
-        input_filename, len(text))
-    if len(text) < skip0:
-      raise ValueError('Input too short for --skip0=')
-    if text[:skip0].lstrip('\0'):
-      raise ValueError('Nonzero bytes found in --skip0= region.')
-    text = text[skip0:]
-  print >>sys.stderr, 'info: bmcompress input: %s (%d bytes)' % (
-      input_filename, len(text))
-  if text[44 : 80] != '\xeb\x22' + '\x53\x5b' * 16 + '\xfa\xf4':
-    raise ValueError('Missing liigmain.bin uncompressed signature.')
+
+def compress(text, load_addr, tmp_filename, method='--ultra-brute'):
+  if not isinstance(text, str):
+    raise TypeError
+  if text[SIGNATURE_OFS : SIGNATURE_OFS + len(SIGNATURE)] != SIGNATURE:
+    raise ValueError('Missing bmcompress signature.')
+  if not method or method == '--none':
+    return text  # Keep it uncompressed.
+  if not method.startswith('--'):
+    # Example good: '--best'.
+    # Example good: '--brute'.
+    # Example good: '--ultra-brute --lzma'.
+    raise ValueError('Bad method: %s' % method)
+  assert SIGNATURE_OFS + len(SIGNATURE) == 80
   preheader = text[:44]  # This will be kept intact.
   input_size = len(text)
   text = text[0x50:]  # Code to be compressed.
@@ -91,7 +60,7 @@ def main(argv):
   # * https://en.wikibooks.org/wiki/X86_Disassembly/Windows_Executable_Files#MS-DOS_header
   # * http://www.delorie.com/djgpp/doc/exe/
   fields = (
-      ('signature', '2s'),
+      ('dosexe_signature', '2s'),  # 'MZ'.
       ('lastsize', 'H'),
       ('nblocks', 'H'),
       ('nreloc', 'H'),
@@ -142,7 +111,7 @@ def main(argv):
   )
   assert len(exe_header) == 32
   dump_header(fields, exe_header[:0x20])
-  open(output_filename + '.tmp', 'wb').write(exe_header + text)
+  open(tmp_filename, 'wb').write(exe_header + text)
   sys.stdout.flush()
   # !! What if can't improve with compression? Keep original.
   #    Or if file too small?
@@ -150,25 +119,31 @@ def main(argv):
   # !! upx: liigmain.bin.tmp: NotCompressibleException
   # TODO(pts): Experiment with --ultra-brute --lzma.
   subprocess.check_call(
-      ((os.path.dirname(__file__) or '.') + '/tools/upx', '-qq',
-       '--ultra-brute', '--', output_filename + '.tmp'))
-  data = open(output_filename + '.tmp', 'rb').read()
+      [(os.path.dirname(__file__) or '.') + '/tools/upx', '-qq'] +
+      method.replace(',', ' ').split() +
+      ['--', tmp_filename])
+  data = open(tmp_filename, 'rb').read()
   exe_header = data[:0x20]
   # !! Truncate data at: nblocks, nreloc.
   h = dump_header(fields, exe_header)
+  if h['dosexe_signature'] != 'MZ':
+    raise ValueError('Expected dosexe_signature from UPX.')
   if h['hdrsize'] != 2:
     raise ValueError('Expected hdrsize=2 from UPX.')
   if h['ip'] != 0:
     raise ValueError('Expected ip=0 from UPX.')
   if h['cs'] != 0:
     raise ValueError('Expected cs=0 from UPX.')
+  os.unlink(tmp_filename)
   data_ary = array.array('B', data[0x20:])
   relocpos = h['relocpos']
   extra_code1_size = 40
   extra_code2_size = 8
   assert extra_code1_size + extra_code2_size == 0x30
   sp_addr = None
-  assert h['nreloc'] == 1  # We want it, for setting sp_addr.
+  # !! Make method == '--lzma' work (currently it emits h['nreloc'] == 0).
+  #    Fixing up the ss and ss afterwards will need >=6 bytes more space.
+  assert h['nreloc'] == 1, h['nreloc']  # We want it, for setting sp_addr.
   for _ in xrange(h['nreloc']):
     # !! Compile without knowing load_addr (or load_seg).
     rofs, rseg = struct.unpack('<HH', data[relocpos : relocpos + 4])
@@ -215,14 +190,64 @@ def main(argv):
       '')
   assert len(extra_code2) == extra_code2_size, len(extra_code2)
   assert len(extra_code1) == extra_code1_size, len(extra_code1)
-  text = ''.join((
+  return ''.join((
       preheader, extra_code1[12:], extra_code2, data_ary.tostring()))
+
+
+def main(argv):
+  input_filename = None
+  output_filename = None
+  # The in-memory address where the input_filename (starting with the nop*k
+  # header) will be loaded. Please note that the nop*k header may be
+  # replaced by something else at load time.
+  #
+  # TODO(pts): Make sure that the .bss is zeroed. How large is it?
+  load_addr = None
+  skip0 = 0
+  i = 1
+  while i < len(argv):
+    arg = argv[i]
+    i += 1
+    if arg.startswith('--bin='):
+      input_filename = arg[arg.find('=') + 1:]
+    elif arg.startswith('--out='):
+      output_filename = arg[arg.find('=') + 1:]
+    elif arg.startswith('--load-addr='):
+      load_addr = int(arg[arg.find('=') + 1:], 0)
+    elif arg.startswith('--skip0='):
+      # Skip this many \x00 bytes at start of --bin=.
+      skip0 = int(arg[arg.find('=') + 1:], 0)
+    else:
+      sys.exit('fatal: unknown command-line flag: ' + arg)
+  if input_filename is None:
+    sys.exit('fatal: missing --bin=')
+  if output_filename is None:
+    sys.exit('fatal: missing --out=')
+  if load_addr is None:
+    sys.exit('fatal: missing --load-addr=')
+  if load_addr & (0x10 - 1):
+    sys.exit('fatal: --load-addr not divisible by 0x10: 0x%x', load_addr)
+  if not (0x8000 <= load_addr <= 0xffff):
+    sys.exit('fatal: --load-addr outside its range: 0x%x', load_addr)
+
+  text = open(input_filename, 'rb').read()
+  if skip0:
+    print >>sys.stderr, 'info: bmcompress input before skip: %s (%d bytes)' % (
+        input_filename, len(text))
+    if len(text) < skip0:
+      raise ValueError('Input too short for --skip0=')
+    if text[:skip0].lstrip('\0'):
+      raise ValueError('Nonzero bytes found in --skip0= region.')
+    text = text[skip0:]
+  print >>sys.stderr, 'info: bmcompress input: %s (%d bytes)' % (
+      input_filename, len(text))
+  tmp_filename = output_filename + '.tmp'
+  text = compress(text, load_addr, '--ultra-brute')
   # !! If compressed is longer than original, emit original.
   # ndisasm -b 16 -o $(LOAD_ADDR) -e 0x2c hiiimain.uncompressed.bin
   open(output_filename, 'wb').write(text)
   print >>sys.stderr, 'info: bmcompress output: %s (%d bytes)' % (
       output_filename, len(text))
-  os.unlink(output_filename + '.tmp')
 
 
 if __name__ == '__main__':

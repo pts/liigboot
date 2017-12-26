@@ -4,6 +4,9 @@
 """Patch some binary code change and the default config for GRUB4DOS grldr."""
 
 import array
+import os
+import os.path
+import stat
 import sys
 
 
@@ -94,8 +97,67 @@ def patch_loader(stage2_data, loader_data):
   return loader_data + stage2_data_ary.tostring()
 
 
+def compress_bs(data, tmp_filename, bs_load_addr=0x7c00, _mod_dict={}):
+  """Compresses 16-bit i386 machine code.
+
+  Under the hood a DOS .exe file is created, it is compressed with UPX, and
+  the result is composed using the compressed output of UPX.
+
+  data is loader_data + stage2_data in our case.
+
+  Please note that compressed code behaves differently than the uncompressed
+  code:
+
+  * After decompression, most registers (including ax, bc, cx, dx, bp, si,
+    di) will be destroyed and become undefined. (More info on:
+    http://www.tavi.co.uk/phobos/exeformat.html)
+  * ss:sp is restored (kept) after decompression. Decompression doesn't use
+    much stack space there.
+  * cs, ds and es will be reset to 0 after decompression.
+  * The entry point (ip) after decompression is the byte after the
+    bmcompress signature.
+  * The memory region containing the bmcompress signature gets destroyed
+    (overwritten) during decompressoin.
+  * In the resulting code the region containing the bmcompress signature
+    gets overwritten by some decompression trampoline code.
+
+  Args:
+    data: The 16-bit i386 machine code to be compressed. Must contain the
+        bmcompress signature near its begining: at least offset 0x2c, at 12
+        bytes after a 16-byte boundary. Everything earlier than the
+        signature will be kept intact. The signature will be destroyed
+        (overwritten). The just-before-compression entry point is the
+        beginning of the signature.
+    tmp_filename: Temporary filename to use during the compression.
+  Returns:
+    Compressed 16-bit i386 machine code equivalent to data. This machine
+    code decompresses itself and then jumps to the byte after the bmcompress
+    signature. See above what else is done during decompression.
+  """
+  if not _mod_dict:  # Not thread-safe.
+    _mod_dict['__file__'] = (
+        os.path.dirname(__file__) or '.') + '/bmcompress.py'
+    exec open(_mod_dict['__file__']) in _mod_dict
+  ofs = data.find(_mod_dict['SIGNATURE']) - 0x2c
+  if ofs < 0:
+    raise ValuError('Missing bmcompress signature.')
+  load_addr = bs_load_addr + ofs
+  print >>sys.stderr, 'info: load_addr=%0x' % load_addr
+  if load_addr & 15:
+    raise ValueError('load_addr not aligned to 16 bytes.')
+  method = '--ultra-brute'  # !! Try both '--ultra-brute --lzma'.
+  #method = '--lzma'  # Doesn't work, h['nreloc'] == 0
+  # Some stats about grub4dos.bs:
+  # 211437 bytes: uncompressed
+  # 107041 bytes: upx --ultra-brute
+  # 101514 bytes: upx --lzma (doesn't work yet, probably slower).
+  text = _mod_dict['compress'](data[ofs:], load_addr, tmp_filename, method)
+  return data[:ofs] + text
+
+
 def main(argv):
   input_filename = output_filename = menu_filename = loader_filename = None
+  do_compress = False
   # The in-memory address where the input_filename (starting with the nop*k
   # header) will be loaded. Please note that the nop*k header may be
   # replaced by something else at load time.
@@ -115,6 +177,8 @@ def main(argv):
       menu_filename = arg[arg.find('=') + 1:]
     elif arg.startswith('--loader='):
       loader_filename = arg[arg.find('=') + 1:]
+    elif arg == '--do-compress':
+      do_compress = True
     else:
       sys.exit('fatal: unknown command-line flag: ' + arg)
   if output_filename is None:
@@ -161,8 +225,15 @@ def main(argv):
     data = patch_code(data, patches)
     data = patch_menu(data, menu_data)
     data = patch_loader(data[0x2000:], loader_data)
+    if do_compress:
+      tmp_filename = output_filename + '.tmp'
+      print >>sys.stderr, (
+          'info: uncompressed grub4dos.bs file would be %d bytes long' %
+          len(data))
+      data = compress_bs(data, tmp_filename)
 
-    print >>sys.stderr, 'info: creating grldr file: %s' % output_filename
+    print >>sys.stderr, 'info: creating grub4dos.bs file: %s (%d bytes)' % (
+        output_filename, len(data))
     open(output_filename, 'wb').write(data)
 
 

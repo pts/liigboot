@@ -93,13 +93,13 @@ syslinux/libcomcore/libcomcore.a: $(wildcard $(addprefix syslinux/,libcomcore/in
 syslinux/libcore/libcore.a: $(wildcard $(addprefix syslinux/,libcore/include/*.h libcore/fs/*.[chsS] libcore/fs/*/*.[chsS] libcore/mem/*.[chsS] libcore/codepage.cp))
 	$(MAKE) -C syslinux libcore/libcore.a
 
-grub4dos.bs: external/grub4dos-0.4.4.grldr fallback_menu.lst patch_grldr.py grub_loader.bin
-	python patch_grldr.py --out=$@ --in=$< --menu=fallback_menu.lst --loader=grub_loader.bin
+grub4dos.bs: external/grub4dos-0.4.4.grldr fallback_menu.lst patch_grldr.py grub_loader.bin bmcompress.py
+	python patch_grldr.py --out=$@ --in=$< --menu=fallback_menu.lst --loader=grub_loader.bin --do-compress
 .PRECIOUS: syslinux.cfg.simplified
 .PRECIOUS: menu.lst.simplified
 %.simplified: % patch_grldr.py
 	python patch_grldr.py --out=$@ --menu=$<
 
 clean:
-	rm -f liigresc_bs.bin liigboot_bs.bin liigresc_empty.img liigboot_empty.img liigboot.img liigboot.zip.tmp liigresc.zip.tmp liigboot.img.install liigboot.zip.tmp.ziptmp liigresc.zip.tmp.ziptmp liigboot.zip mcopy.tmp liigmain.bin hiiimain.uncompressed.bin hiiimain.compressed.bin grldr syslinux.cfg.simplified menu.lst.simplified grub4dos.bs
+	rm -f liigresc_bs.bin liigboot_bs.bin liigresc_empty.img liigboot_empty.img liigboot.img liigboot.zip.tmp liigresc.zip.tmp liigboot.img.install liigboot.zip.tmp.ziptmp liigresc.zip.tmp.ziptmp liigboot.zip mcopy.tmp liigmain.bin hiiimain.uncompressed.bin hiiimain.compressed.bin grldr syslinux.cfg.simplified menu.lst.simplified grub4dos.bs grub4dos.bs.tmp
 	$(MAKE) -C syslinux clean
