@@ -32,13 +32,12 @@ mov sp, 0x2000
 mov ds, ax
 mov es, ax
 
-mov ax, 0x0e00 + 'G'
+mov ax, 0x0e00
 mov bx, 7  ; Color for int 0x10 below. QEMU seems to be ignoring it.
-int 0x10  ; Teletype output.
-
-mov al, dl
-sub al, 0x40
-int 0x10  ; !! Remove '@'.
+mov al, dl  ; Boot drive: 0: (fd0), 0x80: (hd0).
+rol al, 1
+xor al, 96  ; `: (fd0), b: (fd1), a: (hd0), c: (hd1) ...
+int 0x10  ; Teletype output (al as ASCII).
 
 ; Make sure to pass along the drive number in the original dl. GRUB4DOS
 ; respects it, and runs the corresponding `root (...)' command by default.
