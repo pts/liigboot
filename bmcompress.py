@@ -11,19 +11,22 @@ import sys
 import subprocess
 
 
-def dump_header(fields, data):
-  values = struct.unpack('<' + ''.join(f[1] for f in fields), data[:0x20])
-  h = {}
-  #print '---H'
+def parse_struct(fields, data):
+  values = struct.unpack('<' + ''.join(f[1] for f in fields), data)
+  return dict(zip((f[0] for f in fields), values))
+
+
+def dump_struct(fields, data):
+  format = '<' + ''.join(f[1] for f in fields)
+  values = struct.unpack(format, data)
+  print '--- Header ' + format
   for (field_name, field_type), value in zip(fields, values):
-    h[field_name] = value
     if isinstance(value, (int, long)):
       value = '0x%x' % value
     else:
       value = repr(value)
-    #print '%s: %s' % (field_name, value)
-  #print '---/H'
-  return h
+    print '%s = %s' % (field_name, value)
+  print '---/Header'
 
 
 SIGNATURE_OFS = 0x2c
@@ -115,7 +118,7 @@ def bmcompress(text, load_addr, tmp_filename, method='--ultra-brute',
   # * http://www.tavi.co.uk/phobos/exeformat.html (best, describing all registers)
   # * https://en.wikibooks.org/wiki/X86_Disassembly/Windows_Executable_Files#MS-DOS_header
   # * http://www.delorie.com/djgpp/doc/exe/
-  fields = (
+  exe_header_fields = (
       ('dosexe_signature', '2s'),  # 'MZ'.
       ('lastsize', 'H'),
       ('nblocks', 'H'),
@@ -149,7 +152,7 @@ def bmcompress(text, load_addr, tmp_filename, method='--ultra-brute',
   exe_header = struct.pack(
       '<2sHH8sHH14s',
       'MZ',
-      exe_size & 511,
+      (exe_size & 511) or 512,
       (exe_size + 511) >> 9,
       '\x00\x00'  # nreloc.
       '\x02\x00'  # hdrsize.
@@ -165,7 +168,7 @@ def bmcompress(text, load_addr, tmp_filename, method='--ultra-brute',
       '\x00\x00\x00\x00\x00\x00\x00\x00',
   )
   assert len(exe_header) == 32
-  dump_header(fields, exe_header[:0x20])
+  #dump_struct(exe_header_fields, exe_header)
   open(tmp_filename, 'wb').write(exe_header + text[load_ofs:])
   sys.stdout.flush()
   # !! What if can't improve with compression? Keep original.
@@ -179,8 +182,9 @@ def bmcompress(text, load_addr, tmp_filename, method='--ultra-brute',
       ['--', tmp_filename])
   data = open(tmp_filename, 'rb').read()
   exe_header = data[:0x20]
-  # !! Truncate data at: nblocks, nreloc.
-  h = dump_header(fields, exe_header)
+
+  h = parse_struct(exe_header_fields, exe_header)
+  #dump_struct(exe_header_fields, exe_header)
   if h['dosexe_signature'] != 'MZ':
     raise ValueError('Expected dosexe_signature from UPX.')
   if h['hdrsize'] != 2:
@@ -189,13 +193,24 @@ def bmcompress(text, load_addr, tmp_filename, method='--ultra-brute',
     raise ValueError('Expected ip=0 from UPX.')
   if h['cs'] != 0:
     raise ValueError('Expected cs=0 from UPX.')
+  if h['nblocks'] <= 0:
+    raise ValueError('Expected positive nblocks from UPX.')
+  if h['lastsize'] > 512:
+    raise ValueError('Expected small lastsize from UPX.')
+  if len(data) != ((h['nblocks'] - 1) << 9) + h['lastsize']:
+    raise ValueError('Bad .exe file size from UPX.')
+  # For grub4dos.bs --ultra-brute: ss=0x339a,sp=0x200
+  # For hiiimain.compressed.bin --ultra-brute: ss=0x9fe, sp=0x200
   data_ary = array.array('B', data[0x20:])
   relocpos = h['relocpos']
   extra_code2_size = 8
   sp_addr = None
   # !! Make method == '--lzma' work (currently it emits h['nreloc'] == 0).
-  #    Fixing up the ss and ss afterwards will need >=6 bytes more space.
+  #    Fixing up the ss:sp afterwards will need >=6 bytes more space.
   #    The absolute jump \xea is also missing.
+  # !! Also make sure that the ss:sp in the uncompressed exe_header is large
+  #    enough for us to return (and do some interrupts as well -- add 0x200
+  #    to sp, like UPX does?).
   assert h['nreloc'] == 1, h['nreloc']  # We want it, for setting sp_addr.
   os.unlink(tmp_filename)
   for _ in xrange(h['nreloc']):
@@ -223,7 +238,7 @@ def bmcompress(text, load_addr, tmp_filename, method='--ultra-brute',
     relocpos += 4
   ss_addr_x = load_addr - 7
   sp_addr_x = load_addr - 2
-  extra_code1 = (  # Run before the on-the-fly compression.
+  extra_code1 = (  # Run before the on-the-fly decompression.
       struct.pack('<BBH', 0x8c, 0x16, ss_addr_x) +  # mov [...], ss
       struct.pack('<BBH', 0x89, 0x26, sp_addr_x) +  # mov [...], sp
       struct.pack('<BH', 0xb8, (load_addr - 0x100) >> 4) +  # mov ax, ...
@@ -234,7 +249,7 @@ def bmcompress(text, load_addr, tmp_filename, method='--ultra-brute',
       struct.pack('<BH', 0xbc, h['sp']) +   # mov sp, ...
       struct.pack('<BHH', 0xea, 0, (load_addr >> 4)) +  # jmp word 0x...:0
       '')
-  extra_code2 = (  # Run after the on-the-fly compression.
+  extra_code2 = (  # Run after the on-the-fly decompression.
       #'\x6a\x2b' +  # push '+'
       # These must be the last 8 bytes, ss_addr_x and sp_addr_x use them.
       struct.pack('<BH', 0xb8, 0) +  # mov ax, ...
