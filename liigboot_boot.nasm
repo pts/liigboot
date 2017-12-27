@@ -312,7 +312,7 @@ times 0x1b8-16-($-$$) db 0
 ; Disk Address Packet, for reading liigmain.bin from disk. 16 bytes.
 dap:
 dw 0x10
-dw 80 - 2  ; Number of sectors to load.
+dw liigmain_sc  ; Number of sectors to load.
 dw 0, load_addr >> 4  ; segment:offset where ldlinux.bin is loaded to.
 dq 2  ; Read from sector 2 (0x400), that's where ldlinux.bin starts.
 
