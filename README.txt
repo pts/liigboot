@@ -137,4 +137,7 @@ You can try it (e.g. running memtest) in QEMU:
 
 If it doesn't start, run it without the `-enable-kvm'.
 
+Please note that memtest hangs with `-enable-kvm' in QEMU 2.0.0, as a
+workaround run QEMU without this flag.
+
 __END__

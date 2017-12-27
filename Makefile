@@ -49,6 +49,8 @@ hiiimain.uncompressed.bin: hiiimain.nasm
 	nasm -f bin -o $@ $(BOOT_DEFINES) $<
 grub_loader.bin: grub_loader.nasm
 	nasm -f bin -o $@ $<
+memtest.uncompressed.bs: memtest_loader.nasm external/memtest86+-5.01.kernel
+	nasm -f bin -o $@ $< -DMEMTEST_BIN="'external/memtest86+-5.01.kernel'"
 
 liigresc_empty.img: liigboot_boot.nasm $(LIIGMAIN)
 	nasm -f bin -o $@ -DLIIGRESC $(EMPTYFS_DEFINES) liigboot_boot.nasm
@@ -57,12 +59,12 @@ liigboot_empty.img: liigboot_boot.nasm $(LIIGMAIN)
 
 .PRECIOUS: liigboot.img
 .PRECIOUS: liigresc.img
-%.zip: %_empty.img external/memtest86+-5.01.kernel syslinux.cfg.simplified menu.lst.simplified grub4dos.bs mkzip.py liigboot.img.install
+%.zip: %_empty.img memtest.compressed.bs syslinux.cfg.simplified menu.lst.simplified grub4dos.bs mkzip.py liigboot.img.install
 	cp -a $< $@.tmp
-	python copy_to_fat.py --img=$@.tmp --in=syslinux.cfg.simplified --out=syslinux.cfg      --mtime=$(HEXDATE2)
-	python copy_to_fat.py --img=$@.tmp --in=menu.lst.simplified     --out=menu.lst          --mtime=$(HEXDATE2)
-	python copy_to_fat.py --img=$@.tmp --in=grub4dos.bs             --out=grub4dos.bs       --mtime=$(HEXDATE2)
-	python copy_to_fat.py --img=$@.tmp --in=external/memtest86+-5.01.kernel --out=memtest.k --mtime=$(HEXDATE2)
+	python copy_to_fat.py --img=$@.tmp --in=syslinux.cfg.simplified  --out=syslinux.cfg  --mtime=$(HEXDATE2)
+	python copy_to_fat.py --img=$@.tmp --in=menu.lst.simplified      --out=menu.lst      --mtime=$(HEXDATE2)
+	python copy_to_fat.py --img=$@.tmp --in=grub4dos.bs              --out=grub4dos.bs   --mtime=$(HEXDATE2)
+	python copy_to_fat.py --img=$@.tmp --in=memtest.compressed.bs    --out=memtest.bs    --mtime=$(HEXDATE2)
 	python mkzip.py --do-add-install-zip --install=liigboot.img.install --mtime=$(HEXDATE2) --img=$@.tmp
 	mv $@.tmp $@
 
@@ -80,6 +82,9 @@ liigmain.bin: syslinux/core/ldlinux.raw bmcompress.py
 .PRECIOUS: hiiimain.compressed.bin
 %.compressed.bin: %.uncompressed.bin bmcompress.py
 	python bmcompress.py --bin=$< --out=$@ --load-addr=$(LOAD_ADDR2)
+.PRECIOUS: memtest.compressed.bs
+%.compressed.bs: %.uncompressed.bs bmcompress.py
+	python bmcompress.py --bin=$< --out=$@ --load-addr=0x7c00 --sig-ofs-max=0x600
 
 # All dependencies are listed here.
 LDLINUX_BIN_TARGETS = core/ldlinux.raw core/ldlinux.elf core/ldlinux.lsr core/ldlinux.lst core/ldlinux.map core/ldlinux.o core/ldlinux.sec
@@ -101,5 +106,5 @@ grub4dos.bs: external/grub4dos-0.4.4.grldr fallback_menu.lst patch_grldr.py grub
 	python patch_grldr.py --out=$@ --menu=$<
 
 clean:
-	rm -f liigresc_bs.bin liigboot_bs.bin liigresc_empty.img liigboot_empty.img liigboot.img liigboot.zip.tmp liigresc.zip.tmp liigboot.img.install liigboot.zip.tmp.ziptmp liigresc.zip.tmp.ziptmp liigboot.zip mcopy.tmp liigmain.bin hiiimain.uncompressed.bin hiiimain.compressed.bin grldr syslinux.cfg.simplified menu.lst.simplified grub4dos.bs grub4dos.bs.tmp
+	rm -f liigresc_bs.bin liigboot_bs.bin liigresc_empty.img liigboot_empty.img liigboot.img liigboot.zip.tmp liigresc.zip.tmp liigboot.img.install liigboot.zip.tmp.ziptmp liigresc.zip.tmp.ziptmp liigboot.zip mcopy.tmp liigmain.bin hiiimain.uncompressed.bin hiiimain.compressed.bin grldr syslinux.cfg.simplified menu.lst.simplified grub4dos.bs grub4dos.bs.tmp memtest.uncompressed.bs memtest.compressed.bs
 	$(MAKE) -C syslinux clean

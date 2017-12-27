@@ -125,7 +125,7 @@ db 'FAT12   '    ; Filesytem type.
 ; mkfs.vfat creates 52 bytes of headers for FAT12 and FAT16 filesystems.
 times 0x3e-($-$$) db 0  ; Doesn't add any additional bytes.
 
-; Code starts at mem=0x7c58 disk=0x58=90.
+; Code starts at mem=0x7c3e disk=0x3e=62.
 entry2:
 cli
 cld

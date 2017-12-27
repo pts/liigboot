@@ -10,7 +10,7 @@ title back to liigboot:
 	boot
 
 title memtest
-	kernel /memtest.k
+	chainloader --force /memtest.bs
 	boot
 
 title commandline

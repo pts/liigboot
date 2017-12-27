@@ -22,7 +22,7 @@ org 0x7c00
 jmp strict short entry2  ; db 0xeb, 0x3c
 nop  ; db 0x90
 times 0x3e-($-$$) db 0
-; Code starts at mem=0x7c58 disk=0x58=90.
+; Code starts at mem=0x7c3e disk=0x3e=62.
 entry2:
 cld
 sti
@@ -55,6 +55,9 @@ decompress:
 db 0xeb, 0x22
 times 16 dw 0x5b53  ; This will be destroyed by compression.
 db 0xfa, 0xf4
+
+; At this point all registers except for ss and sp are overwritten by the
+; decompressor.
 pop dx  ; Pop the drive number.
 jmp word 0:0x8200
 

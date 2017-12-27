@@ -36,7 +36,7 @@ title commandline
 	commandline
 
 title memtest
-	kernel /memtest.k
+	chainloader --force /memtest.bs
 	boot
 
 title reboot

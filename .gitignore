@@ -46,4 +46,5 @@ menu.lst.simplified
 mcopy.tmp
 *.tmp
 grub_loader.bin
-
+memtest.uncompressed.bs
+memtest.compressed.bs
