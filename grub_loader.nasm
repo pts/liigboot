@@ -11,7 +11,7 @@
 ; * GRUB4DOS grldr load to memory at 0x8200.
 ; * boot sector code is loaded by BIOS at 0x7c00.
 ; * Thus if the boot sector is loaded flat with pre_stage2 in the same image.
-;   then pre_stage2 should start at 0x8200 - 0x7c00 = 0x600 in the image file. 
+;   then pre_stage2 should start at 0x8200 - 0x7c00 = 0x600 in the image file.
 ;
 
 ; Boot sector code. BIOS has populated DL with the boot drive (e.g. 0x80 for
@@ -51,9 +51,7 @@ jmp short decompress
 load_addr equ 0x7c30
 times load_addr+44-0x7c00-($-$$) db 0
 decompress:
-db 0xeb, 0x22
-times 16 dw 0x5b53  ; This will be destroyed by compression.
-db 0xfa, 0xf4
+db 0xeb, '?_SBARERP_COMPRESSION_WILL_BE_APPLIED_AFTER_THE_SLASH______LZMA/'
 
 ; At this point all registers except for ss and sp are overwritten by the
 ; decompressor.

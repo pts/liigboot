@@ -57,8 +57,9 @@ liigresc_empty.img: liigboot_boot.nasm $(LIIGMAIN)
 liigboot_empty.img: liigboot_boot.nasm $(LIIGMAIN)
 	nasm -f bin -o $@ -DLIIGBOOT $(EMPTYFS_DEFINES) liigboot_boot.nasm
 
-.PRECIOUS: liigboot.img
-.PRECIOUS: liigresc.img
+.PRECIOUS: liigboot.zip
+.PRECIOUS: liigresc.zip
+# !! Why is this up to date after `rm memtest.compressed.bs' ?
 %.zip: %_empty.img memtest.compressed.bs syslinux.cfg.simplified menu.lst.simplified grub4dos.bs mkzip.py liigboot.img.install
 	cp -a $< $@.tmp
 	python copy_to_fat.py --img=$@.tmp --in=syslinux.cfg.simplified  --out=syslinux.cfg  --mtime=$(HEXDATE2)
@@ -76,15 +77,15 @@ liigboot.img.install: install.c
 liigboot.img.install.debug: install.c
 	xstatic gcc -g -DDEBUG -W -Wall -Wextra -Werror -o $@ install.c
 
-
 liigmain.bin: syslinux/core/ldlinux.raw bmcompress.py
-	python bmcompress.py --bin=$< --out=$@ --load-addr=$(LOAD_ADDR2) --skip0=$(LOAD_ADDR2)
+	python bmcompress.py --bin=$< --out=$@ --load-addr=$(LOAD_ADDR2) --skip0=$(LOAD_ADDR2) --sig-ofs-max=0x20
 .PRECIOUS: hiiimain.compressed.bin
 %.compressed.bin: %.uncompressed.bin bmcompress.py
-	python bmcompress.py --bin=$< --out=$@ --load-addr=$(LOAD_ADDR2)
+	python bmcompress.py --bin=$< --out=$@ --load-addr=$(LOAD_ADDR2) --sig-ofs-max=0x200
 .PRECIOUS: memtest.compressed.bs
+.PRECIOUS: memtest.uncompressed.bs
 %.compressed.bs: %.uncompressed.bs bmcompress.py
-	python bmcompress.py --bin=$< --out=$@ --load-addr=0x7c00 --sig-ofs-max=0x600
+	python bmcompress.py --bin=$< --out=$@ --load-addr=0x7c00 --sig-ofs-max=0x200
 
 # All dependencies are listed here.
 LDLINUX_BIN_TARGETS = core/ldlinux.raw core/ldlinux.elf core/ldlinux.lsr core/ldlinux.lst core/ldlinux.map core/ldlinux.o core/ldlinux.sec
