@@ -6,6 +6,7 @@
 import array
 import os
 import os.path
+import pipes
 import struct
 import sys
 import subprocess
@@ -44,7 +45,7 @@ assert SIGNATURE_PHASE + len(LONG_SIGNATURE1) == 0x4d
 assert SIGNATURE_PHASE + len(LONG_SIGNATURE2) == 0x4d
 
 
-def bmcompress(text, load_addr, tmp_filename, method='--ultra-brute',
+def bmcompress(code, load_addr, tmp_filename, method='--ultra-brute',
                signature_start_ofs_max=0):
   """Compresses 16-bit i386 machine code to self-decompressing code.
 
@@ -79,7 +80,7 @@ def bmcompress(text, load_addr, tmp_filename, method='--ultra-brute',
     code.
 
   Depending on which signature is used, different behavior is triggered:
-  
+
   * SHORT_SIGNATURE1 enables short mode (see below).
   * LONG_SIGNATURE1 enables long mode (see below) without LZMA.
   * LONG_SIGNATURE2 enables long mode with possibly LZMA. The only
@@ -105,7 +106,7 @@ def bmcompress(text, load_addr, tmp_filename, method='--ultra-brute',
     load_addr.
 
   In long mode:
-  
+
   * The signature (and thuse the output as well) is 28 bytes longer than
     in short mode.
   * The decompressor in the compressed code is position-independent i.e. it
@@ -122,14 +123,14 @@ def bmcompress(text, load_addr, tmp_filename, method='--ultra-brute',
   output of UPX.
 
   Args:
-    text: The 16-bit i386 machine code to be compressed. Must contain the
+    code: The 16-bit i386 machine code to be compressed. Must contain the
         bmcompress signature (SIGNATURE) near its begining:
         at 12 (SIGNATURE_PHASE) bytes after any
         16-byte boundary. Everything earlier than the signature will be kept
         intact (uncompressed) in the output. The signature will be destroyed
         (overwritten). The just-before-compression entry point is the
         beginning of the signature.
-    load_addr: Absolute address to which (the start of) `text' is loaded
+    load_addr: Absolute address to which (the start of) `code' is loaded
         before decompression. Ignored in long mode (except for the alignment
         check), because that works with any load address. Maximum
         value is 0x9f000.
@@ -137,26 +138,32 @@ def bmcompress(text, load_addr, tmp_filename, method='--ultra-brute',
         Will be deleted on success.
     method: Comma-or-whitespace-separated list of UPX command-line flags to
         select the compression method. The -- prefix will be added
-        automatically. Recommended: 'ultra-brute' or
-        'ultra-brute,lzma'. The latter picks the smaller of ultra-brute and
-        lzma. Please note that lzma decompression is slower than the others
-        (ultra-brute, brute, best, i.e. UCL).
-    signature_start_ofs_max: Maximum offset in `text' where the bmcompress
+        automatically. Typical values:
+        * 'ultra-brute' (recommended).
+        * 'ultra-brute,lzma' (recommended). This picks the smaller of
+          ultra-brute and lzma. Please note that lzma decompression is slower
+          than the others (ultra-brute, brute, best, i.e. UCL).
+        * '1': compress faster
+        * ...
+        * '9': compress better
+    signature_start_ofs_max: Maximum offset in `code' where the bmcompress
         signature can be found, minus SIGNATURE_PHASE. E.g. iff 0, then the
         bmcompress signature should be at SIGNATURE_PHASE.
   Returns:
     Compressed 16-bit i386 machine code equivalent to data. This machine
-    code decompresses itself and then jumps to the byte after the bmcompress
-    signature. See above what else is done during decompression. It is
-    exactly the same as the input `text' if compression can't make it smaller.
+    code after the signature decompresses itself and then jumps to the byte
+    after the bmcompress signature. See above what else is done during
+    decompression. It is exactly the same as the input `code' if compression
+    can't make it smaller. If compression cannot impprove the code size,
+    then the original `code' string is returned.
   """
-  if not isinstance(text, str):
+  if not isinstance(code, str):
     raise TypeError
 
   if not method or method == '--none':
-    return text  # Keep it uncompressed.
-  method = ['--' + arg.lstrip('-') for arg in method.replace(',', ' ').split()
-            if arg.lstrip('-')]
+    return code  # Keep it uncompressed.
+  method = ['-' * (1 + (arg not in '123456789')) + arg for arg in
+            (arg.strip('-') for arg in method.replace(',', ' ').split()) if arg]
   # Example good: '--best'.
   # Example good: '--brute'.
   # Example good: '--ultra-brute --lzma'.
@@ -164,7 +171,7 @@ def bmcompress(text, load_addr, tmp_filename, method='--ultra-brute',
     method.append('--ultra-brute')
 
   for signature in (LONG_SIGNATURE1, LONG_SIGNATURE2, SHORT_SIGNATURE1):
-    signature_ofs = text.find(
+    signature_ofs = code.find(
         signature, SIGNATURE_PHASE,
         SIGNATURE_PHASE + signature_start_ofs_max + len(signature))
     if signature_ofs >= 0:
@@ -182,7 +189,7 @@ def bmcompress(text, load_addr, tmp_filename, method='--ultra-brute',
   #
   # The actual limit is lower than 0x9fc00 (start of EBDA), we may need some
   # space for stack etc.
-  if (load_addr or 0) + len(text) >= 0x9f000:
+  if (load_addr or 0) + len(code) >= 0x9f000:
     raise ValueError('Code to be compressed too long.')
 
   load_ofs = signature_ofs + len(signature)
@@ -200,7 +207,7 @@ def bmcompress(text, load_addr, tmp_filename, method='--ultra-brute',
   # ---
   #
   # This is going to get hacky. Below we create a 16-bit DOS .exe file, call
-  # UPX to compress it, and then we patch up the result (filling text[44 : 80]
+  # UPX to compress it, and then we patch up the result (filling code[44 : 80]
   # above with our fixup code).
   #
   # Documentation about DOS .exe files:
@@ -245,7 +252,7 @@ def bmcompress(text, load_addr, tmp_filename, method='--ultra-brute',
     compressed_after_code = (
         'A1CC008ED08B26CF001F0761CF'.decode('hex'))
     assert len(compressed_after_code) == 13
-  exe_size = 0x20 + len(text) - load_ofs + len(compressed_after_code)
+  exe_size = 0x20 + len(code) - load_ofs + len(compressed_after_code)
   # Make the stack large enough so that there are a few bytes after the
   # code. The few bytes are useful in case there is an interrupt. The stack
   # is short-lived, it is used only for a few instructions after the
@@ -271,16 +278,37 @@ def bmcompress(text, load_addr, tmp_filename, method='--ultra-brute',
   assert len(exe_header) == 0x20
   #dump_struct(exe_header_fields, exe_header)
   open(tmp_filename, 'wb').write(''.join((
-      exe_header,compressed_after_code, text[load_ofs:])))
+      exe_header,compressed_after_code, code[load_ofs:])))
   sys.stdout.flush()
-  # !! What if can't improve with compression? Keep original.
-  #    Or if file too small?
-  # !! upx: liigmain.bin.tmp: NotCompressibleException
-  # -qqq is totally quiet. -qq prints one line.
-  subprocess.check_call(
+  # -qqq is totally quiet, it doesn't even print the exception.
+  # -qq prints one line with the sizes.
+  cmd = (
       [(os.path.dirname(__file__) or '.') + '/tools/upx', '-qq'] +
       method +
       ['--', tmp_filename])
+  print >>sys.stderr, 'info: running: %s' % ' ' .join(map(pipes.quote, cmd))
+  try:
+    p = subprocess.Popen(cmd, stdin=subprocess.PIPE,
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  except OSError:
+    os.unlink(tmp_filename)
+    raise RuntimeError('UPX not found: %x' % cmd[0])
+  try:
+    upx_stdout, upx_stderr = p.communicate('')
+  finally:
+    exit_code = p.wait()
+  if exit_code:
+    os.unlink(tmp_filename)
+    # 'upx: ...: IOException: file is too small -- skipped\n'
+    # 'upx: ...: NotCompressibleException\n'
+    if (': file is too small' in upx_stderr or
+        ': file is too large' in upx_stderr or
+        ': NotCompressibleException' in upx_stderr):
+      return code  # Keep the original if UPX can't improve it.
+    sys.stderr.write(upx_stderr)
+    raise RuntimeError('UPX failed with exit_code=0x%x.' % exit_code)
+  # Don't print upx_stdout, it just contains statistics as a one-liner.
+
   data = open(tmp_filename, 'rb').read()
   exe_header = data[:0x20]
 
@@ -406,6 +434,8 @@ def bmcompress(text, load_addr, tmp_filename, method='--ultra-brute',
         struct.pack('<BHH', 0xea, 0, (load_addr >> 4)) +  # jmp word 0x...:0
         '')
     code_after = (  # Run after the on-the-fly decompression.
+        # !! Do this instead as part of the relocation instead, save space.
+        #    Also make the `xor ax, ax' code compressed.
         #'\x6a\x2b' +  # push '+'
         # These must be the last 8 bytes, ss_addr_x and sp_addr_x use them.
         struct.pack('<BH', 0xb8, 0) +  # mov ax, ...
@@ -416,9 +446,12 @@ def bmcompress(text, load_addr, tmp_filename, method='--ultra-brute',
     assert len(code_before) + len(code_after) == 0x24
   else:
     raise AssertionError('Unknown mode: %s' % (mode,))
-  return ''.join((
-      text[:signature_ofs],  # Kept intact.
+  compressed_code = ''.join((
+      code[:signature_ofs],  # Kept intact.
       code_before, code_after, data_ary.tostring()))
+  if len(code) <= len(compressed_code):
+    return code
+  return compressed_code
 
 
 def main(argv):
@@ -463,25 +496,23 @@ def main(argv):
     # It doesn't matter much, it's just a sanity check.
     sys.exit('fatal: --load-addr outside its range: 0x%x' % load_addr)
 
-  text = open(input_filename, 'rb').read()
+  code = open(input_filename, 'rb').read()
   if skip0:
     print >>sys.stderr, 'info: bmcompress input before skip: %s (%d bytes)' % (
-        input_filename, len(text))
-    if len(text) < skip0:
+        input_filename, len(code))
+    if len(code) < skip0:
       raise ValueError('Input too short for --skip0=')
-    if text[:skip0].lstrip('\0'):
+    if code[:skip0].lstrip('\0'):
       raise ValueError('Nonzero bytes found in --skip0= region.')
-    text = text[skip0:]
+    code = code[skip0:]
   print >>sys.stderr, 'info: bmcompress input: %s (%d bytes)' % (
-      input_filename, len(text))
+      input_filename, len(code))
   tmp_filename = output_filename + '.tmp'
-  text = bmcompress(text, load_addr, tmp_filename, method,
+  code = bmcompress(code, load_addr, tmp_filename, method,
                     signature_start_ofs_max)
-  # !! If compressed is longer than original, emit original.
-  # ndisasm -b 16 -o $(LOAD_ADDR) -e 0x2c hiiimain.uncompressed.bin
-  open(output_filename, 'wb').write(text)
+  open(output_filename, 'wb').write(code)
   print >>sys.stderr, 'info: bmcompress output: %s (%d bytes)' % (
-      output_filename, len(text))
+      output_filename, len(code))
 
 
 if __name__ == '__main__':

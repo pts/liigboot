@@ -251,7 +251,7 @@ def main(argv):
       # 107041 bytes: upx --ultra-brute
       # 101514 bytes: upx --lzma (doesn't work yet, probably slower).
       data = call_bmcompress(
-          text=data, load_addr=0x7c00, tmp_filename=tmp_filename,
+          code=data, load_addr=0x7c00, tmp_filename=tmp_filename,
           method=method, signature_start_ofs_max=0x1f0)
 
     print >>sys.stderr, 'info: creating grub4dos.bs file: %s (%d bytes)' % (

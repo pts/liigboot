@@ -1,6 +1,7 @@
 ; by pts@fazekas.hu at Mon Dec 25 04:22:48 CET 2017
 ;
-; $ nasm -DLOAD_ADDR=0x8000 -f bin -o hiiimain.bin hiiimain.nasm
+; $ nasm -DLOAD_ADDR=0x8000 -f bin -o hiiimain.uncompressed.bin hiiimain.nasm
+; $ ndisasm -b 16 -o 0x8000 -e 0x2c hiiimain.uncompressed.bin
 ;
 ; Expected output in QEMU:
 ;
