@@ -246,6 +246,15 @@ def main(argv):
         # grub4dos-0.4.4-src/stage/builtins.c.
         # Another instance of ERR_HD_VOL_START_0.
         (0x17869, '\x85\xc0\x75', '\x85\xc0\xeb'),
+        # Make (fd0,0)/... work, removing the `!(current_drive & 0x80)'
+        # check from stage2/disk_io.c in function set_device.
+        (0x1a080, '\x0f\x89\x2b\x01\x00\x00', '\x90\x90\x90\x90\x90\x90'),
+        # Make (fd0,0)/... work, removing the `!(current_drive & 0x80)'
+        # check from stage2/disk_io.c in function sane_partition.
+        # Call to sane_partition() inline 3 times.
+        (0x1a18a, '\x78\x0c', '\xeb\x0c'),
+        (0x1abee, '\x78\x0c', '\xeb\x0c'),
+        (0x1b009, '\x78\x0c', '\xeb\x0c'),
     )
     data = patch_code(data, patches)
     data = patch_menu(data, menu_data)
