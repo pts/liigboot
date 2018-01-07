@@ -7,6 +7,7 @@ import array
 import os
 import os.path
 import stat
+import subprocess
 import sys
 
 
@@ -161,12 +162,22 @@ def patch_loader(stage2_data, loader_data):
   return loader_data + stage2_data_ary.tostring()
 
 
-def call_bmcompress(_mod_dict={}, **kwargs):
-  if not _mod_dict:  # Not thread-safe.
-    _mod_dict['__file__'] = (
-        os.path.dirname(__file__) or '.') + '/bmcompress.py'
-    exec open(_mod_dict['__file__']) in _mod_dict
-  return _mod_dict['bmcompress'](**kwargs)
+def call_compress_flat16(filename):
+  mydir = os.path.dirname(__file__) or '.'
+  cmd = (
+      '%s/tools/upxbc' % mydir,
+      '--upx=%s/tools/upx' % mydir,
+      '--flat16', '--load-addr=0x7c00', '--sig-ofs-max=0x1f0', '--', filename)
+  try:
+    p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+  except OSError:
+    raise RuntimeError('Program not found: %s' % cmd[0])
+  try:
+    p.communicate('')
+  finally:
+    exit_code = p.wait()
+  if exit_code:
+    raise RuntimeError('Program failed with exit_code=0x%x.' % exit_code)
 
 
 def main(argv):
@@ -239,24 +250,20 @@ def main(argv):
     data = patch_code(data, patches)
     data = patch_menu(data, menu_data)
     data = patch_loader(data[0x2000:], loader_data)
+    open(output_filename, 'wb').write(data)
     if do_compress:
       tmp_filename = output_filename + '.tmp'
       print >>sys.stderr, (
           'info: uncompressed grub4dos.bs file would be %d bytes long' %
           len(data))
-      method = '--ultra-brute'  # TODO(pts): Try both '--ultra-brute --lzma'.
-      #method = '--lzma'  # Doesn't work, h['nreloc'] == 0
-      # Some stats about grub4dos.bs:
-      # 211437 bytes: uncompressed
-      # 107041 bytes: upx --ultra-brute
-      # 101514 bytes: upx --lzma (doesn't work yet, probably slower).
-      data = call_bmcompress(
-          code=data, load_addr=0x7c00, tmp_filename=tmp_filename,
-          method=method, signature_start_ofs_max=0x1f0)
-
-    print >>sys.stderr, 'info: creating grub4dos.bs file: %s (%d bytes)' % (
-        output_filename, len(data))
-    open(output_filename, 'wb').write(data)
+      try:
+        call_compress_flat16(output_filename)
+      except:
+        if os.path.isfile(output_filename):
+          os.remove(output_filename)
+        raise
+    print >>sys.stderr, 'info: created grub4dos.bs file: %s (%d bytes)' % (
+        output_filename, os.stat(output_filename).st_size)
 
 
 if __name__ == '__main__':

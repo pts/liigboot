@@ -53,13 +53,13 @@ mov ss, ax
 mov sp, 0x2000  ; Set up stack.
 
 jmp short decompress
-; bmcompress.py compression header, --load_addr=0x7c30
 ; Make load_addr larger if the code above becomes longer.
 ; !! Better automatic alignment.
 load_addr equ 0x7c30
 times load_addr+44-0x7c00-($-$$) db 0
 decompress:
 
+; upxbc --flat16 compression signature, --load_addr=0x7c30
 ; memtest86+-5.01.kernel: 182704 bytes
 ; memtest.uncompressed.bs: 213936 bytes
 ; memtest.compressed.bs --ultra-brute: 57633 bytes

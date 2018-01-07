@@ -23,18 +23,18 @@ org __org
 msg_pre:
 db 13, 10, 'Message in the very beginning.' , 13, 10, 0
 
-; Align to 12-byte boundary for bmcompress. Use 0x2c because
+; Align to 12-byte boundary for upxbc --flat16. Use 0x2c because
 ; liigboot_boot.nasm jumps here.
 times 44-($-$$) db 'X'
 
 %if 0  ; Short
-; bmcompress SHORT_SIGNATURE1.
+; upxbc --flat16 compression SHORT_SIGNATURE1.
 ;db 0xeb, 0x22
 ;times 16 dw 0x5b53  ; This will be destroyed by compression.
 ;db 0xfa, 0xf4
 %else
 ; !! Add automatic alignment.
-; bmcompress LONG_SIGNATURE
+; upxbc --flat16 compression LONG_SIGNATURE.
 db 0xeb, '?_SBARERP_COMPRESSION_WILL_BE_APPLIED_AFTER_THE_SLASH______LZMA/'
 %endif
 

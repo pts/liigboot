@@ -77,15 +77,15 @@ liigboot.img.install: install.c
 liigboot.img.install.debug: install.c
 	xstatic gcc -g -DDEBUG -W -Wall -Wextra -Werror -o $@ install.c
 
-liigmain.bin: syslinux/core/ldlinux.raw bmcompress.py
-	python bmcompress.py --bin=$< --out=$@ --load-addr=$(LOAD_ADDR2) --skip0=$(LOAD_ADDR2) --sig-ofs-max=0x20
+liigmain.bin: syslinux/core/ldlinux.raw tools/upxbc tools/upx
+	python tools/upxbc --upx=tools/upx --flat16 -f --in=$< --out=$@ --load-addr=$(LOAD_ADDR2) --skip0=$(LOAD_ADDR2) --sig-ofs-max=0x20
 .PRECIOUS: hiiimain.compressed.bin
-%.compressed.bin: %.uncompressed.bin bmcompress.py
-	python bmcompress.py --bin=$< --out=$@ --load-addr=$(LOAD_ADDR2) --sig-ofs-max=0x200
+%.compressed.bin: %.uncompressed.bin tools/upxbc tools/upx
+	python tools/upxbc --upx=tools/upx --flat16 -f --in=$< --out=$@ --load-addr=$(LOAD_ADDR2) --sig-ofs-max=0x200
 .PRECIOUS: memtest.compressed.bs
 .PRECIOUS: memtest.uncompressed.bs
-%.compressed.bs: %.uncompressed.bs bmcompress.py
-	python bmcompress.py --bin=$< --out=$@ --load-addr=0x7c00 --sig-ofs-max=0x200
+%.compressed.bs: %.uncompressed.bs tools/upxbc tools/upx
+	python tools/upxbc --upx=tools/upx --flat16 -f --in=$< --out=$@ --load-addr=0x7c00 --sig-ofs-max=0x200
 
 # All dependencies are listed here.
 LDLINUX_BIN_TARGETS = core/ldlinux.raw core/ldlinux.elf core/ldlinux.lsr core/ldlinux.lst core/ldlinux.map core/ldlinux.o core/ldlinux.sec
@@ -99,7 +99,7 @@ syslinux/libcomcore/libcomcore.a: $(wildcard $(addprefix syslinux/,libcomcore/in
 syslinux/libcore/libcore.a: $(wildcard $(addprefix syslinux/,libcore/include/*.h libcore/fs/*.[chsS] libcore/fs/*/*.[chsS] libcore/mem/*.[chsS] libcore/codepage.cp))
 	$(MAKE) -C syslinux libcore/libcore.a
 
-grub4dos.bs: external/grub4dos-0.4.4.grldr fallback_menu.lst patch_grldr.py grub_loader.bin bmcompress.py
+grub4dos.bs: external/grub4dos-0.4.4.grldr fallback_menu.lst patch_grldr.py grub_loader.bin tools/upxbc tools/upx
 	python patch_grldr.py --out=$@ --in=$< --menu=fallback_menu.lst --loader=grub_loader.bin --do-compress
 .PRECIOUS: syslinux.cfg.simplified
 .PRECIOUS: menu.lst.simplified
@@ -107,5 +107,5 @@ grub4dos.bs: external/grub4dos-0.4.4.grldr fallback_menu.lst patch_grldr.py grub
 	python patch_grldr.py --out=$@ --menu=$<
 
 clean:
-	rm -f liigresc_bs.bin liigboot_bs.bin liigresc_empty.img liigboot_empty.img liigboot.img liigboot.zip.tmp liigresc.zip.tmp liigboot.img.install liigboot.zip.tmp.ziptmp liigresc.zip.tmp.ziptmp liigboot.zip mcopy.tmp liigmain.bin hiiimain.uncompressed.bin hiiimain.compressed.bin grldr syslinux.cfg.simplified menu.lst.simplified grub4dos.bs grub4dos.bs.tmp memtest.uncompressed.bs memtest.compressed.bs
+	rm -f *.tmp liigresc_bs.bin liigboot_bs.bin liigresc_empty.img liigboot_empty.img liigboot.img liigboot.zip.tmp liigresc.zip.tmp liigboot.img.install liigboot.zip.tmp.ziptmp liigresc.zip.tmp.ziptmp liigboot.zip mcopy.tmp liigmain.bin hiiimain.uncompressed.bin hiiimain.compressed.bin grldr syslinux.cfg.simplified menu.lst.simplified grub4dos.bs grub4dos.bs.tmp memtest.uncompressed.bs memtest.compressed.bs
 	$(MAKE) -C syslinux clean

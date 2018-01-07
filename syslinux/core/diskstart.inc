@@ -71,7 +71,7 @@ late_banner	db 13, 'Liigboot ', DATE_STR, 0
 ; ---
 
 _start:  ; 0x802c
-		; The liigmain.bin bmcompress uncompressed signature,
+		; The liigmain.bin upxbc --flat16 compression signature,
 		; Harmless code (jumps over itself).
 		db 0xeb, '"SBAFEUU_COMPRESSION_AFTER_SLASH__/'
 

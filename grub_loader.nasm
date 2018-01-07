@@ -46,12 +46,16 @@ push dx
 
 jmp short decompress
 
-; bmcompress.py compression header, --load_addr=0x7c30
+; upxbc --flat16 compression signature, --load_addr=0x7c30
 ; Make load_addr larger if the code above becomes longer.
 load_addr equ 0x7c30
 times load_addr+44-0x7c00-($-$$) db 0
 decompress:
 db 0xeb, '?_SBARERP_COMPRESSION_WILL_BE_APPLIED_AFTER_THE_SLASH______LZMA/'
+; Some stats about grub4dos.bs:
+; 211437 bytes: uncompressed
+; 107041 bytes: upx --ultra-brute --no-lzma
+; 101403 bytes: upx --best --lzma
 
 ; At this point all registers except for ss and sp are overwritten by the
 ; decompressor.

@@ -237,7 +237,7 @@ sti
 ; liigmain.bin can be uncompressed (in this case it's the same file as
 ; syslinux/core/ldlinux.raw from file offset 0x8000 (defined as LOAD_ADDR
 ; and LOAD_ADDR2 in Makefile) in the Ligboot source tree; typical size:
-; 42128 bytes, too large for below) or compressed by bmcompress.py (which
+; 42128 bytes, too large for below) or compressed by upxbc (which
 ; invokes UPX under the hood; typical size: 28851 bytes). For testing
 ; purposes, a hello-world alternative is provided (in file hiiimain.nasm;
 ; make hiiimain.bin, and use hiiimain.bin instead of liigmain.bin; you may
