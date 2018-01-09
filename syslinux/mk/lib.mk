@@ -34,8 +34,7 @@ LIBFLAGS = -DDYNAMIC_CRC_TABLE -DPNG_NO_CONSOLE_IO \
 # fallback anyway, just use that on old machines...
 # LIBFLAGS += -DPNG_NO_FLOATING_POINT_SUPPORTED
 
-REQFLAGS  = $(GCCOPT) -g -mregparm=3 -DREGPARM=3 -D__COM32__ \
-	    -Iinclude -iwithprefix include
+REQFLAGS  = $(GCCOPT) -g -mregparm=3 -DREGPARM=3 -Iinclude
 OPTFLAGS  = -Os -falign-functions=0 -falign-jumps=0 \
 	    -falign-labels=0 -ffast-math -fomit-frame-pointer
 WARNFLAGS = $(GCCWARN) -Wpointer-arith -Wwrite-strings -Wstrict-prototypes -Winline
