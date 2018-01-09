@@ -25,9 +25,9 @@ codepage.o: codepage.cp
 MAKEDEPS =
 
 libcore.a: $(LIBCOREOBJS)
-	rm -f $@
+	$(RM) -f $@
 	$(AR) cq $@ $^
-	$(RANLIB) $@  
+	#$(RANLIB) $@
 
 clean:
-	rm -f libcore.a $(LIBCOREOBJS) .*.o.d sys/.*.o.d libgcc/.*.o.d *.lst
+	$(RM) -f libcore.a $(LIBCOREOBJS) .*.o.d sys/.*.o.d libgcc/.*.o.d *.lst

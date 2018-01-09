@@ -32,7 +32,7 @@ COM32DIR = $(AUXDIR)/com32
 BOOTDIR	    = /boot
 EXTLINUXDIR = $(BOOTDIR)/extlinux
 
-NASM	 = nasm_need_override_from_env
+NASM	 = TZ= $(topdir)/../tools/nasm
 NASMOPT  = -Ox
 
 PERL	 = $(topdir)/../tools/perl
@@ -44,23 +44,13 @@ gcc_ok   = $(shell tmpf=gcc_ok.$$$$.tmp; \
 		   if $(CC) $(GCCOPT) $(1) -c $(topdir)/dummy.c \
 			-o $$tmpf 2>/dev/null ; \
 		   then echo '$(1)'; else echo '$(2)'; fi; \
-		   rm -f $$tmpf)
+		   $(RM) -f $$tmpf)
 
 LD	 = ld
 OBJDUMP	 = objdump
 OBJCOPY  = objcopy
 AR       = ar
-NM       = nm
-RANLIB   = ranlib
-STRIP	 = strip
-GZIPPROG = gzip
-XZ	 = xz
-PNGTOPNM = pngtopnm
-MCOPY    = mcopy
-MFORMAT  = mformat
-MKISOFS  = mkisofs
-SED	 = sed
-WGET	 = wget
+RM       = $(topdir)/../tools/rm
 
 com32    = $(topdir)/com32
 
@@ -75,10 +65,3 @@ MAKEDEPS = -Wp,-MT,$@,-MD,$(dir $@).$(notdir $@).d
 # Dependencies that exclude system headers; use whenever we use
 # header files from the platform.
 UMAKEDEPS = -Wp,-MT,$@,-MMD,$(dir $@).$(notdir $@).d
-
-# Items that are only appropriate during development; this file is
-# removed when tarballs are generated.
--include $(MAKEDIR)/devel.mk
-
-# Local additions, like -DDEBUG can go here
--include $(MAKEDIR)/local.mk

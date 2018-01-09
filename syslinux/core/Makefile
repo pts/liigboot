@@ -99,4 +99,4 @@ codepage.o: codepage.S codepage.cp
 #-include .*.d */.*.d */*/.*.d
 
 clean:
-	rm -f ldlinux.o ldlinux.elf ldlinux.lst ldlinux.lsr ldlinux.raw ldlinux.map ldlinux.sec ldlinux.bin ldlinux.sys ldlinux.bss .*.d
+	$(RM) -f ldlinux.o ldlinux.elf ldlinux.lst ldlinux.lsr ldlinux.raw ldlinux.map ldlinux.sec ldlinux.bin ldlinux.sys ldlinux.bss .*.d

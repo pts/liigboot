@@ -3,7 +3,6 @@
 PYTHON = tools/python -E
 PERL = tools/perl
 NASM = TZ= tools/nasm  # `TZ=' just to avoid opening /etc/TZ.
-SYSLINUX_NASM = TZ= ../../tools/nasm
 
 ifeq ($(HEXDATE),)
 # Unix timestamp corresponding to `Fri Dec  8 20:07:37 GMT 2017'.
@@ -66,13 +65,13 @@ liigboot_empty.img: liigboot_boot.nasm $(LIIGMAIN)
 .PRECIOUS: liigresc.zip
 # !! Why is this up to date after `rm memtest.compressed.bs' ?
 %.zip: %_empty.img memtest.compressed.bs syslinux.cfg.simplified menu.lst.simplified grub4dos.bs mkzip.py liigboot.img.install
-	cp -a $< $@.tmp
+	tools/cp -a $< $@.tmp
 	$(PYTHON) copy_to_fat.py --img=$@.tmp --in=syslinux.cfg.simplified  --out=syslinux.cfg  --mtime=$(HEXDATE2)
 	$(PYTHON) copy_to_fat.py --img=$@.tmp --in=menu.lst.simplified      --out=menu.lst      --mtime=$(HEXDATE2)
 	$(PYTHON) copy_to_fat.py --img=$@.tmp --in=grub4dos.bs              --out=grub4dos.bs   --mtime=$(HEXDATE2)
 	$(PYTHON) copy_to_fat.py --img=$@.tmp --in=memtest.compressed.bs    --out=memtest.bs    --mtime=$(HEXDATE2)
 	$(PYTHON) mkzip.py --do-add-install-zip --install=liigboot.img.install --mtime=$(HEXDATE2) --img=$@.tmp
-	mv $@.tmp $@
+	tools/mv $@.tmp $@
 
 liigboot.img.install: install.c
 	gcc -m32 -D__LINTINY__ -D__LINTINY_DEFAULTLIBS__ -fno-stack-protector -fomit-frame-pointer -fno-ident -fno-builtin-exit -fno-builtin-_exit -fno-builtin-_Exit -fno-unwind-tables -fno-asynchronous-unwind-tables -isystem lintiny -Os -falign-functions=1 -mpreferred-stack-boundary=2 -falign-jumps=1 -falign-loops=1 -s -static -nostdlib -nostdinc -Wl,--build-id=none -Wl,-T,lintiny/lintiny.scr -W -Wall -Wextra -Werror -o $@ install.c lintiny/liblintiny.a
@@ -95,7 +94,7 @@ liigmain.bin: syslinux/core/ldlinux.raw tools/upxbc tools/upx
 # All dependencies are listed here.
 LDLINUX_BIN_TARGETS = core/ldlinux.raw core/ldlinux.elf core/ldlinux.lsr core/ldlinux.lst core/ldlinux.map core/ldlinux.o core/ldlinux.sec
 $(addprefix syslinux/,$(LDLINUX_BIN_TARGETS)): syslinux/libcomcore/libcomcore.a syslinux/libcore/libcore.a syslinux/core/syslinux.ld syslinux/core/ldlinux.asm $(wildcard syslinux/core/*.inc)
-	$(MAKE) -C syslinux $(LDLINUX_BIN_TARGETS) HEXDATE=$(HEXDATE2) LOAD_ADDR=$(LOAD_ADDR2) NASM='$(SYSLINUX_NASM)'
+	$(MAKE) -C syslinux $(LDLINUX_BIN_TARGETS) HEXDATE=$(HEXDATE2) LOAD_ADDR=$(LOAD_ADDR2)
 SYSLINUX_VERSION_TARGETS = version.gen version.h version.mk
 $(addprefix syslinux/,$(SYSLINUX_VERSION_TARGETS)): syslinux/version syslinux/version.pl
 	$(MAKE) -C syslinux $(SYSLINUX_VERSION_TARGETS)
@@ -112,5 +111,5 @@ grub4dos.bs: external/grub4dos-0.4.4.grldr fallback_menu.lst patch_grldr.py grub
 	$(PYTHON) patch_grldr.py --out=$@ --menu=$<
 
 clean:
-	rm -f *.tmp liigresc_bs.bin liigboot_bs.bin liigresc_empty.img liigboot_empty.img liigboot.img liigboot.zip.tmp liigresc.zip.tmp liigboot.img.install liigboot.zip.tmp.ziptmp liigresc.zip.tmp.ziptmp liigboot.zip mcopy.tmp liigmain.bin hiiimain.uncompressed.bin hiiimain.compressed.bin grldr syslinux.cfg.simplified menu.lst.simplified grub4dos.bs grub4dos.bs.tmp memtest.uncompressed.bs memtest.compressed.bs
+	tools/rm -f *.tmp liigresc_bs.bin liigboot_bs.bin liigresc_empty.img liigboot_empty.img liigboot.img liigboot.zip.tmp liigresc.zip.tmp liigboot.img.install liigboot.zip.tmp.ziptmp liigresc.zip.tmp.ziptmp liigboot.zip mcopy.tmp liigmain.bin hiiimain.uncompressed.bin hiiimain.compressed.bin grldr syslinux.cfg.simplified menu.lst.simplified grub4dos.bs grub4dos.bs.tmp memtest.uncompressed.bs memtest.compressed.bs
 	$(MAKE) -C syslinux clean

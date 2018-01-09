@@ -2,6 +2,9 @@
 
 include $(MAKEDIR)/syslinux.mk
 
+ifeq ($(MAKECMDGOALS),clean)
+GCCOPT :=
+else
 GCCOPT := $(call gcc_ok,-std=gnu99,)
 GCCOPT += $(call gcc_ok,-m32,)
 GCCOPT += $(call gcc_ok,-fno-stack-protector,)
@@ -16,6 +19,7 @@ GCCOPT += $(call gcc_ok,-falign-jumps=0,-malign-jumps=0)
 GCCOPT += $(call gcc_ok,-falign-labels=0,-malign-labels=0)
 GCCOPT += $(call gcc_ok,-falign-loops=0,-malign-loops=0)
 GCCOPT += $(call gcc_ok,-mpreferred-stack-boundary=2,)
+endif
 
 INCLUDE	= -I.
 STRIP	= strip --strip-all -R .comment -R .note

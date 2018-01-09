@@ -16,6 +16,9 @@
 
 include $(MAKEDIR)/syslinux.mk
 
+ifeq ($(MAKECMDGOALS),clean)
+GCCOPT :=
+else
 GCCOPT    := $(call gcc_ok,-m32,)
 GCCOPT    += $(call gcc_ok,-ffreestanding,)
 GCCOPT	  += $(call gcc_ok,-fno-stack-protector,)
@@ -32,6 +35,7 @@ GCCOPT    += $(call gcc_ok,-falign-labels=0,-malign-labels=0)
 GCCOPT    += $(call gcc_ok,-falign-loops=0,-malign-loops=0)
 GCCOPT    += $(call gcc_ok,-mpreferred-stack-boundary=2,)
 GCCOPT    += $(call gcc_ok,-mincoming-stack-boundary=2,)
+endif
 
 LIBGCC    := $(shell $(CC) $(GCCOPT) --print-libgcc)
 

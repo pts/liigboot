@@ -27,11 +27,11 @@ all: libcomcore.a
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 libcomcore.a: $(LIBCOMCOREOBJS)
-	rm -f $@
+	$(RM) -f $@
 	$(AR) cq $@ $^
-	$(RANLIB) $@  
+	#$(RANLIB) $@
 
 clean:
-	rm -f libcomcore.a $(LIBCOMCOREOBJS) .*.o.d sys/.*.o.d libgcc/.*.o.d
+	$(RM) -f libcomcore.a $(LIBCOMCOREOBJS) .*.o.d sys/.*.o.d libgcc/.*.o.d
 
 

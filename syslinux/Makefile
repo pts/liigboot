@@ -48,7 +48,7 @@ version.mk: version version.pl
 	$(PERL) version.pl $< $@ '< := @'
 
 clean:
-	rm -f version.gen version.h version.mk
+	$(RM) -f version.gen version.h version.mk
 	$(MAKE) -C core clean
 	$(MAKE) -C libcomcore clean
 	$(MAKE) -C libcore clean

@@ -17,6 +17,9 @@
 
 include $(MAKEDIR)/syslinux.mk
 
+ifeq ($(MAKECMDGOALS),clean)
+GCCOPT :=
+else
 GCCOPT := $(call gcc_ok,-std=gnu99,)
 GCCOPT += $(call gcc_ok,-m32,)
 GCCOPT += $(call gcc_ok,-fno-stack-protector,)
@@ -33,6 +36,7 @@ GCCOPT += $(call gcc_ok,-falign-labels=0,-malign-labels=0)
 GCCOPT += $(call gcc_ok,-falign-loops=0,-malign-loops=0)
 GCCOPT += $(call gcc_ok,-mpreferred-stack-boundary=2,)
 GCCOPT += $(call gcc_ok,-incoming-stack-boundary=2,)
+endif
 
 com32  := $(topdir)/com32
 RELOCS := $(com32)/tools/relocs
