@@ -2,6 +2,8 @@
 
 PYTHON = tools/python -E
 PERL = tools/perl
+NASM = TZ= tools/nasm  # `TZ=' just to avoid opening /etc/TZ.
+SYSLINUX_NASM = TZ= ../../tools/nasm
 
 ifeq ($(HEXDATE),)
 # Unix timestamp corresponding to `Fri Dec  8 20:07:37 GMT 2017'.
@@ -45,20 +47,20 @@ endif
 all: liigboot.zip
 
 liigresc_bs.bin: liigboot_boot.nasm
-	nasm -f bin -o $@ -DLIIGRESC $(BOOT_DEFINES) $<
+	$(NASM) -f bin -o $@ -DLIIGRESC $(BOOT_DEFINES) $<
 liigboot_bs.bin: liigboot_boot.nasm
-	nasm -f bin -o $@ -DLIIGBOOT $(BOOT_DEFINES) $<
+	$(NASM) -f bin -o $@ -DLIIGBOOT $(BOOT_DEFINES) $<
 hiiimain.uncompressed.bin: hiiimain.nasm
-	nasm -f bin -o $@ $(BOOT_DEFINES) $<
+	$(NASM) -f bin -o $@ $(BOOT_DEFINES) $<
 grub_loader.bin: grub_loader.nasm
-	nasm -f bin -o $@ $<
+	$(NASM) -f bin -o $@ $<
 memtest.uncompressed.bs: memtest_loader.nasm external/memtest86+-5.01.kernel
-	nasm -f bin -o $@ $< -DMEMTEST_BIN="'external/memtest86+-5.01.kernel'"
+	$(NASM) -f bin -o $@ $< -DMEMTEST_BIN="'external/memtest86+-5.01.kernel'"
 
 liigresc_empty.img: liigboot_boot.nasm $(LIIGMAIN)
-	nasm -f bin -o $@ -DLIIGRESC $(EMPTYFS_DEFINES) liigboot_boot.nasm
+	$(NASM) -f bin -o $@ -DLIIGRESC $(EMPTYFS_DEFINES) liigboot_boot.nasm
 liigboot_empty.img: liigboot_boot.nasm $(LIIGMAIN)
-	nasm -f bin -o $@ -DLIIGBOOT $(EMPTYFS_DEFINES) liigboot_boot.nasm
+	$(NASM) -f bin -o $@ -DLIIGBOOT $(EMPTYFS_DEFINES) liigboot_boot.nasm
 
 .PRECIOUS: liigboot.zip
 .PRECIOUS: liigresc.zip
@@ -93,7 +95,7 @@ liigmain.bin: syslinux/core/ldlinux.raw tools/upxbc tools/upx
 # All dependencies are listed here.
 LDLINUX_BIN_TARGETS = core/ldlinux.raw core/ldlinux.elf core/ldlinux.lsr core/ldlinux.lst core/ldlinux.map core/ldlinux.o core/ldlinux.sec
 $(addprefix syslinux/,$(LDLINUX_BIN_TARGETS)): syslinux/libcomcore/libcomcore.a syslinux/libcore/libcore.a syslinux/core/syslinux.ld syslinux/core/ldlinux.asm $(wildcard syslinux/core/*.inc)
-	$(MAKE) -C syslinux $(LDLINUX_BIN_TARGETS) HEXDATE=$(HEXDATE2) LOAD_ADDR=$(LOAD_ADDR2)
+	$(MAKE) -C syslinux $(LDLINUX_BIN_TARGETS) HEXDATE=$(HEXDATE2) LOAD_ADDR=$(LOAD_ADDR2) NASM='$(SYSLINUX_NASM)'
 SYSLINUX_VERSION_TARGETS = version.gen version.h version.mk
 $(addprefix syslinux/,$(SYSLINUX_VERSION_TARGETS)): syslinux/version syslinux/version.pl
 	$(MAKE) -C syslinux $(SYSLINUX_VERSION_TARGETS)

@@ -32,7 +32,7 @@ COM32DIR = $(AUXDIR)/com32
 BOOTDIR	    = /boot
 EXTLINUXDIR = $(BOOTDIR)/extlinux
 
-NASM	 = nasm
+NASM	 = nasm_need_override_from_env
 NASMOPT  = -Ox
 
 PERL	 = $(topdir)/../tools/perl
