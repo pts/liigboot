@@ -140,4 +140,19 @@ If it doesn't start, run it without the `-enable-kvm'.
 Please note that memtest hangs with `-enable-kvm' in QEMU 2.0.0, as a
 workaround run QEMU without this flag.
 
+How to build Liigboot
+~~~~~~~~~~~~~~~~~~~~~
+These build instructions are for an i386 or amd64 Linux host system.
+
+Run these commands (without the leading `$'):
+
+  $ git clone https://github.com/pts/liigboot
+  $ cd liigboot
+  $ tools/make
+  $ ls -l liigboot.zip
+  -rw-r--r-- 1 user group 1048576 Jan  9 15:49 liigboot.zip
+
+The build should be preproducible, i.e. it should create a bit-by-bit
+identical liigboot.zip output file when run again.
+
 __END__
