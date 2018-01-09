@@ -1,5 +1,8 @@
 .PHONY: all clean
 
+PYTHON = tools/python -E
+PERL = tools/perl
+
 ifeq ($(HEXDATE),)
 # Unix timestamp corresponding to `Fri Dec  8 20:07:37 GMT 2017'.
 # Also 1512763657.
@@ -62,11 +65,11 @@ liigboot_empty.img: liigboot_boot.nasm $(LIIGMAIN)
 # !! Why is this up to date after `rm memtest.compressed.bs' ?
 %.zip: %_empty.img memtest.compressed.bs syslinux.cfg.simplified menu.lst.simplified grub4dos.bs mkzip.py liigboot.img.install
 	cp -a $< $@.tmp
-	python copy_to_fat.py --img=$@.tmp --in=syslinux.cfg.simplified  --out=syslinux.cfg  --mtime=$(HEXDATE2)
-	python copy_to_fat.py --img=$@.tmp --in=menu.lst.simplified      --out=menu.lst      --mtime=$(HEXDATE2)
-	python copy_to_fat.py --img=$@.tmp --in=grub4dos.bs              --out=grub4dos.bs   --mtime=$(HEXDATE2)
-	python copy_to_fat.py --img=$@.tmp --in=memtest.compressed.bs    --out=memtest.bs    --mtime=$(HEXDATE2)
-	python mkzip.py --do-add-install-zip --install=liigboot.img.install --mtime=$(HEXDATE2) --img=$@.tmp
+	$(PYTHON) copy_to_fat.py --img=$@.tmp --in=syslinux.cfg.simplified  --out=syslinux.cfg  --mtime=$(HEXDATE2)
+	$(PYTHON) copy_to_fat.py --img=$@.tmp --in=menu.lst.simplified      --out=menu.lst      --mtime=$(HEXDATE2)
+	$(PYTHON) copy_to_fat.py --img=$@.tmp --in=grub4dos.bs              --out=grub4dos.bs   --mtime=$(HEXDATE2)
+	$(PYTHON) copy_to_fat.py --img=$@.tmp --in=memtest.compressed.bs    --out=memtest.bs    --mtime=$(HEXDATE2)
+	$(PYTHON) mkzip.py --do-add-install-zip --install=liigboot.img.install --mtime=$(HEXDATE2) --img=$@.tmp
 	mv $@.tmp $@
 
 liigboot.img.install: install.c
@@ -78,14 +81,14 @@ liigboot.img.install.debug: install.c
 	xstatic gcc -g -DDEBUG -W -Wall -Wextra -Werror -o $@ install.c
 
 liigmain.bin: syslinux/core/ldlinux.raw tools/upxbc tools/upx
-	python tools/upxbc --upx=tools/upx --flat16 -f --in=$< --out=$@ --load-addr=$(LOAD_ADDR2) --skip0=$(LOAD_ADDR2) --sig-ofs-max=0x20
+	$(PYTHON) tools/upxbc --upx=tools/upx --flat16 -f --in=$< --out=$@ --load-addr=$(LOAD_ADDR2) --skip0=$(LOAD_ADDR2) --sig-ofs-max=0x20
 .PRECIOUS: hiiimain.compressed.bin
 %.compressed.bin: %.uncompressed.bin tools/upxbc tools/upx
-	python tools/upxbc --upx=tools/upx --flat16 -f --in=$< --out=$@ --load-addr=$(LOAD_ADDR2) --sig-ofs-max=0x200
+	$(PYTHON) tools/upxbc --upx=tools/upx --flat16 -f --in=$< --out=$@ --load-addr=$(LOAD_ADDR2) --sig-ofs-max=0x200
 .PRECIOUS: memtest.compressed.bs
 .PRECIOUS: memtest.uncompressed.bs
 %.compressed.bs: %.uncompressed.bs tools/upxbc tools/upx
-	python tools/upxbc --upx=tools/upx --flat16 -f --in=$< --out=$@ --load-addr=0x7c00 --sig-ofs-max=0x200
+	$(PYTHON) tools/upxbc --upx=tools/upx --flat16 -f --in=$< --out=$@ --load-addr=0x7c00 --sig-ofs-max=0x200
 
 # All dependencies are listed here.
 LDLINUX_BIN_TARGETS = core/ldlinux.raw core/ldlinux.elf core/ldlinux.lsr core/ldlinux.lst core/ldlinux.map core/ldlinux.o core/ldlinux.sec
@@ -100,11 +103,11 @@ syslinux/libcore/libcore.a: $(wildcard $(addprefix syslinux/,libcore/include/*.h
 	$(MAKE) -C syslinux libcore/libcore.a
 
 grub4dos.bs: external/grub4dos-0.4.4.grldr fallback_menu.lst patch_grldr.py grub_loader.bin tools/upxbc tools/upx
-	python patch_grldr.py --out=$@ --in=$< --menu=fallback_menu.lst --loader=grub_loader.bin --do-compress
+	$(PYTHON) patch_grldr.py --out=$@ --in=$< --menu=fallback_menu.lst --loader=grub_loader.bin --do-compress
 .PRECIOUS: syslinux.cfg.simplified
 .PRECIOUS: menu.lst.simplified
 %.simplified: % patch_grldr.py
-	python patch_grldr.py --out=$@ --menu=$<
+	$(PYTHON) patch_grldr.py --out=$@ --menu=$<
 
 clean:
 	rm -f *.tmp liigresc_bs.bin liigboot_bs.bin liigresc_empty.img liigboot_empty.img liigboot.img liigboot.zip.tmp liigresc.zip.tmp liigboot.img.install liigboot.zip.tmp.ziptmp liigresc.zip.tmp.ziptmp liigboot.zip mcopy.tmp liigmain.bin hiiimain.uncompressed.bin hiiimain.compressed.bin grldr syslinux.cfg.simplified menu.lst.simplified grub4dos.bs grub4dos.bs.tmp memtest.uncompressed.bs memtest.compressed.bs

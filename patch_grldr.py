@@ -165,6 +165,7 @@ def patch_loader(stage2_data, loader_data):
 def call_compress_flat16(filename):
   mydir = os.path.dirname(__file__) or '.'
   cmd = (
+      sys.executable, '-E',  # Run the same Python interpreter which runs us.
       '%s/tools/upxbc' % mydir,
       '--upx=%s/tools/upx' % mydir,
       '--flat16', '--load-addr=0x7c00', '--sig-ofs-max=0x1f0', '--', filename)
