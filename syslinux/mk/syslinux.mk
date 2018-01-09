@@ -37,6 +37,9 @@ NASMOPT  = -Ox
 
 PERL	 = $(topdir)/../tools/perl
 PYTHON   = $(topdir)/../tools/python -E
+LD	 = $(topdir)/../tools/ld
+AR       = $(topdir)/../tools/ar
+RM       = $(topdir)/../tools/rm
 
 CC	 = gcc
 gcc_ok   = $(shell tmpf=gcc_ok.$$$$.tmp; \
@@ -44,10 +47,6 @@ gcc_ok   = $(shell tmpf=gcc_ok.$$$$.tmp; \
 			-o $$tmpf 2>/dev/null ; \
 		   then echo '$(1)'; else echo '$(2)'; fi; \
 		   $(RM) -f $$tmpf)
-
-LD	 = ld
-AR       = ar
-RM       = $(topdir)/../tools/rm
 
 com32    = $(topdir)/com32
 
