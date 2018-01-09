@@ -33,7 +33,7 @@ all: version.gen version.h version.mk core/ldlinux.raw
 
 # All dependencies are listed here.
 LDLINUX_RAW_TARGETS = core/ldlinux.raw core/ldlinux.elf core/ldlinux.lsr core/ldlinux.lst core/ldlinux.map core/ldlinux.o core/ldlinux.sec
-$(LDLINUX_RAW_TARGETS): version.gen version.h version.mk libcomcore/libcomcore.a libcore/libcore.a core/syslinux.ld core/ldlinux.asm $(wildcard core/*.inc)
+$(LDLINUX_RAW_TARGETS): version.gen version.h version.mk libcomcore/libcomcore.a libcore/libcore.a core/syslinux.ld core/ldlinux.asm $(wildcard core/*.inc) $(topdir)/../elftool.py
 	$(MAKE) -C core $(notdir $(LDLINUX_RAW_TARGETS)) HEXDATE=$(HEXDATE2) LOAD_ADDR=$(LOAD_ADDR2)
 libcomcore/libcomcore.a: $(wildcard libcomcore/include/*.[chsS] libcomcore/include/bitsize/*.[chsS] libcomcore/include/klibc/*.[chsS] libcomcore/include/sys/*.[chsS] libcomcore/libgcc/*.[chsS] libcomcore/sys/*.[chsS])
 	$(MAKE) -C libcomcore $(notdir $@)

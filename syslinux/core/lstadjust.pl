@@ -22,6 +22,7 @@ open(OUT, "> $outfile\0")
 while (defined($line = <MAP>)) {
     if ($line =~ /^\s*([0-9]+)\s+(\S+)\s+([0-9a-f]+)\s+([0-9a-f]+)\s+([0-9a-f]+)\s+([0-9a-f]+)\s+2\*\*([0-9]+)/i) {
 	$vstart{$2} = hex $4;
+	#printf STDERR "SET vstart %s 0x%x\n", $2, $vstart{$2};
     }
 }
 close(MAP);
@@ -39,6 +40,7 @@ while (defined($line = <LST>)) {
 
     ($label, $op, $arg, $tail) = split(/\s+/, $source);
     if ($op =~ /^(|\[)section$/i) {
+        #print STDERR "LOOKUP vstart $arg\n";
 	$offset = $vstart{$arg};
     } elsif ($op =~ /^(absolute|\[absolute)$/i) {
 	$offset = 0;

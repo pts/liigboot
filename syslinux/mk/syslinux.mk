@@ -36,6 +36,7 @@ NASM	 = TZ= $(topdir)/../tools/nasm
 NASMOPT  = -Ox
 
 PERL	 = $(topdir)/../tools/perl
+PYTHON   = $(topdir)/../tools/python -E
 
 CHMOD	 = chmod
 
@@ -47,7 +48,6 @@ gcc_ok   = $(shell tmpf=gcc_ok.$$$$.tmp; \
 		   $(RM) -f $$tmpf)
 
 LD	 = ld
-OBJDUMP	 = objdump
 OBJCOPY  = objcopy
 AR       = ar
 RM       = $(topdir)/../tools/rm
