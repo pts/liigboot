@@ -50,34 +50,34 @@ CFLAGS  = $(OPTFLAGS) $(REQFLAGS) $(WARNFLAGS) $(LIBFLAGS)
 % : %.S
 
 .c.o:
-	$(CC) $(MAKEDEPS) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 .c.i:
-	$(CC) $(MAKEDEPS) $(CFLAGS) -E -o $@ $<
+	$(CC) $(CFLAGS) -E -o $@ $<
 
 .c.s:
-	$(CC) $(MAKEDEPS) $(CFLAGS) -S -o $@ $<
+	$(CC) $(CFLAGS) -S -o $@ $<
 
 .S.o:
-	$(CC) $(MAKEDEPS) $(CFLAGS) -D__ASSEMBLY__ -c -o $@ $<
+	$(CC) $(CFLAGS) -D__ASSEMBLY__ -c -o $@ $<
 
 .S.s:
-	$(CC) $(MAKEDEPS) $(CFLAGS) -D__ASSEMBLY__ -E -o $@ $<
+	$(CC) $(CFLAGS) -D__ASSEMBLY__ -E -o $@ $<
 
 .S.lo:
-	$(CC) $(MAKEDEPS) $(CFLAGS) $(SOFLAGS) -D__ASSEMBLY__ -c -o $@ $<
+	$(CC) $(CFLAGS) $(SOFLAGS) -D__ASSEMBLY__ -c -o $@ $<
 
 .S.ls:
-	$(CC) $(MAKEDEPS) $(CFLAGS) $(SOFLAGS) -D__ASSEMBLY__ -E -o $@ $<
+	$(CC) $(CFLAGS) $(SOFLAGS) -D__ASSEMBLY__ -E -o $@ $<
 
 .s.o:
-	$(CC) $(MAKEDEPS) $(CFLAGS) -x assembler -c -o $@ $<
+	$(CC) $(CFLAGS) -x assembler -c -o $@ $<
 
 .ls.lo:
-	$(CC) $(MAKEDEPS) $(CFLAGS) $(SOFLAGS) -x assembler -c -o $@ $<
+	$(CC) $(CFLAGS) $(SOFLAGS) -x assembler -c -o $@ $<
 
 .c.lo:
-	$(CC) $(MAKEDEPS) $(CFLAGS) $(SOFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) $(SOFLAGS) -c -o $@ $<
 
 .c.ls:
-	$(CC) $(MAKEDEPS) $(CFLAGS) $(SOFLAGS) -S -o $@ $<
+	$(CC) $(CFLAGS) $(SOFLAGS) -S -o $@ $<

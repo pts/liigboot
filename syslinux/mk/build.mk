@@ -25,8 +25,8 @@ LIBS	   =
 .SUFFIXES: .c .o .S .s .i .elf .com .bin .asm .lst .c32 .lss
 
 %.o: %.c
-	$(CC) $(UMAKEDEPS) $(CFLAGS) -c -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
 %.i: %.c
-	$(CC) $(UMAKEDEPS) $(CFLAGS) -E -o $@ $<
+	$(CC) $(CFLAGS) -E -o $@ $<
 %.s: %.c
-	$(CC) $(UMAKEDEPS) $(CFLAGS) -S -o $@ $<
+	$(CC) $(CFLAGS) -S -o $@ $<

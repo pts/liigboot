@@ -22,7 +22,6 @@ HEADERS := $(wildcard include/*.h include/bitsize/*.h include/klibc/*.h include/
 
 all: libcomcore.a
 
-# Don't include $(MAKEDEPS) or $(UMAKEDEPS) here, it's not needed.
 %.o: %.c $(HEADERS)
 	$(CC) $(CFLAGS) -c -o $@ $<
 

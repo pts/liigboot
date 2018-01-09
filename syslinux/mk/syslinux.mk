@@ -53,10 +53,3 @@ com32    = $(topdir)/com32
 GCCWARN := -W -Wall -Wstrict-prototypes
 # Extremely useful variant for debugging...
 #GCCWARN += -Wno-clobbered -Werror
-
-# Common stanza to make gcc generate .*.d dependency files
-MAKEDEPS = -Wp,-MT,$@,-MD,$(dir $@).$(notdir $@).d
-
-# Dependencies that exclude system headers; use whenever we use
-# header files from the platform.
-UMAKEDEPS = -Wp,-MT,$@,-MMD,$(dir $@).$(notdir $@).d

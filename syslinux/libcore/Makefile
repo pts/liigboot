@@ -22,8 +22,6 @@ all: libcore.a
 
 codepage.o: codepage.cp
 
-MAKEDEPS =
-
 libcore.a: $(LIBCOREOBJS)
 	$(RM) -f $@
 	$(AR) cq $@ $^
