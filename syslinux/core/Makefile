@@ -87,7 +87,7 @@ kwdhash.gen: keywords genhash.pl
 	$(NASM) -f elf $(NASMOPT) -DDATE_STR="'$(HEXDATE2)'" -DHEXDATE="$(HEXDATE2)" -DLOAD_ADDR=$(LOAD_ADDR) -l $(<:.asm=.lsr) -o $(<:.asm=.o) -MP -MD .$(<:.asm=.o).d $<
 
 %.elf %.lst %.map %.sec: %.o %.lsr $(LIBS) syslinux.ld $(topdir)/../elftool.py
-	$(CC) -static -nostdlib -march=i386 -Wl,-T,syslinux.ld -Wl,--build-id=none -o $(<:.o=.elf) $< $(LIBS)
+	$(CC) $(BASEGCCFLAGS) -Wl,-T,syslinux.ld -Wl,--build-id=none -o $(<:.o=.elf) $< $(LIBS)
 	# Equivalent to: objdump -h $(<:.o=.elf) > $(@:.elf=.sec)
 	$(PYTHON) $(topdir)/../elftool.py --in=$(<:.o=.elf) --sec=$(@:.elf=.sec)
 	$(PERL) lstadjust.pl $(<:.o=.lsr) $(<:.o=.sec) $(<:.o=.lst)

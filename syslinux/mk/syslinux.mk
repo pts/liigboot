@@ -39,8 +39,10 @@ PERL	 = $(topdir)/../tools/perl
 PYTHON   = $(topdir)/../tools/python -E
 AR       = $(topdir)/../tools/ar
 RM       = $(topdir)/../tools/rm
-
 CC	 = gcc
+
+BASEGCCFLAGS = -static -nostdlib -nostdinc -m32 -march=i686
+
 gcc_ok   = $(shell tmpf=gcc_ok.$$$$.tmp; \
 		   if $(CC) $(GCCOPT) $(1) -c $(topdir)/dummy.c \
 			-o $$tmpf 2>/dev/null ; \

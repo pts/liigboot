@@ -5,8 +5,8 @@ include $(MAKEDIR)/syslinux.mk
 ifeq ($(MAKECMDGOALS),clean)
 GCCOPT :=
 else
-GCCOPT := $(call gcc_ok,-std=gnu99,)
-GCCOPT += $(call gcc_ok,-m32,)
+GCCOPT :=
+GCCOPT += $(call gcc_ok,-std=gnu99,)
 GCCOPT += $(call gcc_ok,-fno-stack-protector,)
 GCCOPT += $(call gcc_ok,-fwrapv,)
 GCCOPT += $(call gcc_ok,-freg-struct-return,)
@@ -35,12 +35,12 @@ LIBFLAGS = -DDYNAMIC_CRC_TABLE -DPNG_NO_CONSOLE_IO \
 # LIBFLAGS += -DPNG_NO_FLOATING_POINT_SUPPORTED
 
 REQFLAGS  = $(GCCOPT) -g -mregparm=3 -DREGPARM=3 -D__COM32__ \
-	    -nostdinc -Iinclude -iwithprefix include
-OPTFLAGS  = -Os -march=i386 -falign-functions=0 -falign-jumps=0 \
+	    -Iinclude -iwithprefix include
+OPTFLAGS  = -Os -falign-functions=0 -falign-jumps=0 \
 	    -falign-labels=0 -ffast-math -fomit-frame-pointer
 WARNFLAGS = $(GCCWARN) -Wpointer-arith -Wwrite-strings -Wstrict-prototypes -Winline
 
-CFLAGS  = $(OPTFLAGS) $(REQFLAGS) $(WARNFLAGS) $(LIBFLAGS)
+CFLAGS  = $(BASEGCCFLAGS) $(OPTFLAGS) $(REQFLAGS) $(WARNFLAGS) $(LIBFLAGS)
 
 .SUFFIXES: .c .o .a .so .lo .i .S .s .ls .ss .lss
 
