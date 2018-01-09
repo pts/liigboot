@@ -38,8 +38,6 @@ NASMOPT  = -Ox
 PERL	 = $(topdir)/../tools/perl
 PYTHON   = $(topdir)/../tools/python -E
 
-CHMOD	 = chmod
-
 CC	 = gcc
 gcc_ok   = $(shell tmpf=gcc_ok.$$$$.tmp; \
 		   if $(CC) $(GCCOPT) $(1) -c $(topdir)/dummy.c \
@@ -48,7 +46,6 @@ gcc_ok   = $(shell tmpf=gcc_ok.$$$$.tmp; \
 		   $(RM) -f $$tmpf)
 
 LD	 = ld
-OBJCOPY  = objcopy
 AR       = ar
 RM       = $(topdir)/../tools/rm
 

@@ -73,8 +73,9 @@ kwdhash.gen: keywords genhash.pl
 
 .PRECIOUS: %.elf
 
-%.raw: %.elf
-	$(OBJCOPY) -O binary $< $@
+%.raw: %.elf $(topdir)/../elftool.py
+	# Equivalent to: objcopy -O binary $< $@
+	$(PYTHON) $(topdir)/../elftool.py --in=$< --raw=$@
 
 # GNU make 3.82 gets confused by the first form
 .PRECIOUS: %.raw

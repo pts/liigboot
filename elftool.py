@@ -3,6 +3,7 @@
 
 """elftool.py analyze ELF executables."""
 
+import array
 import struct
 import sys
 
@@ -43,13 +44,14 @@ RELOCATION_TYPES = (
   2 and 'PC32',
 )
 
-def load_elf(filename):
+def load_elf(filename, need_raw=False):
   """Removes section headers and unnecessary functions fom an ELF executable.
 
   It also changes ei_osabi to GNU/Linux.
 
   Args:
     filename: Input filename. The file ill be modified in place.
+    need_raw: Boolean indicating whether the raw, binary data is needed.
   """
   f = open(filename, 'rb')
   try:
@@ -98,6 +100,34 @@ def load_elf(filename):
                    p_flags, p_align))
       #truncate_ofs = max(truncate_ofs, p_offset + p_filesz)
 
+    raw_data = None
+    if need_raw:
+      # p_paddr and p_vaddr addresses are different in Syslinux ldlinux.elf,
+      # we take p_paddr, that's what `objcopy -O binary' uses.
+      start_addrs, end_addrs = [], []
+      for phe in ph:
+        (p_type, p_offset, p_vaddr, p_paddr, p_filesz, p_memsz, p_flags,
+         p_align) = phe
+        if p_filesz > 0:
+          start_addrs.append(p_paddr)
+          end_addrs.append(p_paddr + p_filesz)
+      load_addr = min(start_addrs)  # Raises ValueError if empty.
+      size = max(end_addrs)
+      print 'info: ELF flat load_addr=0x%x size=0x%x' % (load_addr, size)
+      raw_data = array.array('B', '\0') * size
+      for phe in ph:
+        (p_type, p_offset, p_vaddr, p_paddr, p_filesz, p_memsz, p_flags,
+         p_align) = phe
+        if p_filesz > 0:
+          f.seek(p_offset)
+          data = f.read(p_filesz)
+          if len(data) != p_filesz:
+            raise ValueError
+          raw_data[p_paddr - load_addr : p_paddr - load_addr + p_filesz] = (
+              array.array('B', data))
+          data = None  # Save memory.
+      raw_data = raw_data.tostring()
+
     f.seek(e_shoff)
     shdata = f.read(40 * e_shnum)
     if len(shdata) != 40 * e_shnum:
@@ -131,15 +161,14 @@ def load_elf(filename):
 
   finally:
     f.close()  # Works even if fout == f.
-  return e_entry, ph, sh
+  return e_entry, ph, sh, raw_data
 
 
 LOG2 = dict((1 << i, i) for i in xrange(32))
 
 
 def main(argv):
-  elf_filename = None
-  sec_filename = None
+  elf_filename = raw_filename = sec_filename = None
   i = 1
   while i < len(argv):
     arg = argv[i]
@@ -148,30 +177,37 @@ def main(argv):
       elf_filename = arg[arg.find('=') + 1:]
     elif arg.startswith('--sec='):
       sec_filename = arg[arg.find('=') + 1:]
+    elif arg.startswith('--raw='):
+      raw_filename = arg[arg.find('=') + 1:]
     else:
-      sys.exit('fatal: unknown command-line flag: ' + arg)
+      sys.exit('unknown command-line flag: ' + arg)
   if elf_filename is None:
-    sys.exit('fatal: missing --in=')
-  if sec_filename is None:
-    sys.exit('fatal: missing --sec=')
-  e_entry, ph, sh = load_elf(elf_filename)
-  output = [
-     '\n%s: file format elf32-i386\n\nSections:\n'
-     'Idx Name          Size      VMA       LMA       File off  Algn\n' %
-     elf_filename]
-  i = 0
-  for she in sh:
-    (sh_name, sh_type, sh_flags, sh_addr, sh_offset, sh_size, sh_link,
-     sh_info, sh_addralign, sh_entsize, sh__type_name) = she
-    if sh_type in (SHT_NULL, SHT_STRTAB, SHT_SYMTAB):
-      continue
-    # Our value for LMA (sh_addr) doesn't always match objdump.
-    # Also we always print an X instead of the section flags.
-    output.append(
-        '%3d %-13s %08x  %08x  %08x  %08x  2**%d\n                  X\n' %
-        (i, sh_name, sh_size, sh_addr, sh_addr, sh_offset, LOG2[sh_addralign]))
-    i += 1
-  open(sec_filename, 'w').write(''.join(output))
+    sys.exit('missing --in=')
+  if sec_filename is None and raw_filename is None:
+    sys.exit('missing --sec= and --raw')
+  e_entry, ph, sh, raw_data = load_elf(
+      elf_filename, need_raw=(raw_filename is not None))
+  if sec_filename is not None:
+    output = [
+       '\n%s: file format elf32-i386\n\nSections:\n'
+       'Idx Name          Size      VMA       LMA       File off  Algn\n' %
+       elf_filename]
+    i = 0
+    for she in sh:
+      (sh_name, sh_type, sh_flags, sh_addr, sh_offset, sh_size, sh_link,
+       sh_info, sh_addralign, sh_entsize, sh__type_name) = she
+      if sh_type in (SHT_NULL, SHT_STRTAB, SHT_SYMTAB):
+        continue
+      # Our value for LMA (sh_addr) doesn't always match objdump.
+      # Also we always print an X instead of the section flags.
+      output.append(
+          '%3d %-13s %08x  %08x  %08x  %08x  2**%d\n                  X\n' %
+          (i, sh_name, sh_size, sh_addr, sh_addr, sh_offset,
+           LOG2[sh_addralign]))
+      i += 1
+    open(sec_filename, 'w').write(''.join(output))
+  if raw_filename is not None:
+    open(raw_filename, 'wb').write(raw_data)
 
 
 if __name__ == '__main__':
