@@ -42,7 +42,6 @@ OPTFLAGS  = -Os -march=i386 -falign-functions=0 -falign-jumps=0 \
 WARNFLAGS = $(GCCWARN) -Wpointer-arith -Wwrite-strings -Wstrict-prototypes -Winline
 
 CFLAGS  = $(OPTFLAGS) $(REQFLAGS) $(WARNFLAGS) $(LIBFLAGS)
-LDFLAGS	= -m elf32_i386
 
 .SUFFIXES: .c .o .a .so .lo .i .S .s .ls .ss .lss
 

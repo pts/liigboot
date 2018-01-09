@@ -37,13 +37,8 @@ GCCOPT    += $(call gcc_ok,-mpreferred-stack-boundary=2,)
 GCCOPT    += $(call gcc_ok,-mincoming-stack-boundary=2,)
 endif
 
-LIBGCC    := $(shell $(CC) $(GCCOPT) --print-libgcc)
-
-LD        += -m elf_i386
-
 # Note: use += for CFLAGS and SFLAGS in case something is set in MCONFIG.local
 CFLAGS    += $(GCCOPT) -g $(GCCWARN) -Wno-sign-compare $(OPTFLAGS) $(INCLUDES)
-SFLAGS    += $(CFLAGS) -D__ASSEMBLY__
 
 .SUFFIXES: .c .o .S .s .i .elf .com .bin .asm .lst .c32 .lss
 
@@ -55,6 +50,6 @@ SFLAGS    += $(CFLAGS) -D__ASSEMBLY__
 	$(CC) $(MAKEDEPS) $(CFLAGS) -S -o $@ $<
 # -Wa,-a=$*.lst
 %.o: %.S
-	$(CC) $(MAKEDEPS) $(SFLAGS) -c -o $@ $<
+	$(CC) $(MAKEDEPS) $(CFLAGS) -D__ASSEMBLY__ -c -o $@ $<
 %.s: %.S
-	$(CC) $(MAKEDEPS) $(SFLAGS) -E -o $@ $<
+	$(CC) $(MAKEDEPS) $(CFLAGS) -D__ASSEMBLY__ -E -o $@ $<

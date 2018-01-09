@@ -37,7 +37,6 @@ NASMOPT  = -Ox
 
 PERL	 = $(topdir)/../tools/perl
 PYTHON   = $(topdir)/../tools/python -E
-LD	 = $(topdir)/../tools/ld
 AR       = $(topdir)/../tools/ar
 RM       = $(topdir)/../tools/rm
 

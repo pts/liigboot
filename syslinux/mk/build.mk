@@ -20,7 +20,6 @@ OPTFLAGS   = -g -Os
 INCLUDES   =
 CFLAGS     = -W -Wall -Wno-sign-compare -D_FILE_OFFSET_BITS=64 \
              $(OPTFLAGS) $(INCLUDES)
-LDFLAGS    =
 LIBS	   =
 
 .SUFFIXES: .c .o .S .s .i .elf .com .bin .asm .lst .c32 .lss
