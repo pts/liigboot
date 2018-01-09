@@ -35,8 +35,7 @@ EXTLINUXDIR = $(BOOTDIR)/extlinux
 NASM	 = nasm
 NASMOPT  = -Ox
 
-PERL	 = perl
-UPX	 = upx
+PERL	 = $(topdir)/../tools/perl
 
 CHMOD	 = chmod
 

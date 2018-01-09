@@ -3,8 +3,6 @@
 # Read the "version" file and produce some macro declarations
 #
 
-use Fcntl;
-
 sub defx($$$) {
     my($def, $name, $val) = @_;
 
@@ -15,8 +13,8 @@ sub defx($$$) {
 }
 
 ($vfile, $vout, $def) = @ARGV;
-sysopen(VERSION, $vfile, O_RDONLY) or die "$0: Cannot open $vfile\n";
-$vfile = <VERSION>;
+open(VERSION, '<', $vfile) or die "$0: Cannot open $vfile\n";
+$vfile = join('', <VERSION>);
 chomp $vfile;
 close(VERSION);
 
@@ -28,7 +26,7 @@ $vma = $2+0;
 $vmi = $3+0;
 $year = $4;
 
-sysopen(VI, $vout, O_WRONLY|O_CREAT|O_TRUNC)
+open(VI, '>', $vout)
     or die "$0: Cannot create $vout: $!\n";
 print VI defx($def, 'VERSION',       $version);
 print VI defx($def, 'VERSION_STR',   '"'.$version.'"');
