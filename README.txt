@@ -148,11 +148,15 @@ Run these commands (without the leading `$'):
 
   $ git clone https://github.com/pts/liigboot
   $ cd liigboot
-  $ tools/make
+  $ PATH=/dev/null/missing tools/make
   $ ls -l liigboot.zip
   -rw-r--r-- 1 user group 1048576 Jan  9 15:49 liigboot.zip
 
 The build should be preproducible, i.e. it should create a bit-by-bit
 identical liigboot.zip output file when run again.
+
+The PATH=/dev/null/missing setting makes sure that the compilers and other
+tools on the system (e.g. nasm, gcc, ld, perl, python) are not used, not
+even by accident.
 
 __END__

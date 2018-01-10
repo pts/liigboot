@@ -24,22 +24,22 @@ LIBDIR   = /usr/lib
 DATADIR  = /usr/share
 AUXDIR   = $(DATADIR)/syslinux
 DIAGDIR  = $(AUXDIR)/diag
-MANDIR	 = /usr/man
+MANDIR   = /usr/man
 INCDIR   = /usr/include
 TFTPBOOT = /tftpboot
 COM32DIR = $(AUXDIR)/com32
 
-BOOTDIR	    = /boot
+BOOTDIR  = /boot
 EXTLINUXDIR = $(BOOTDIR)/extlinux
 
-NASM	 = TZ= $(topdir)/../tools/nasm
+NASM     = TZ= $(topdir)/../tools/nasm
 NASMOPT  = -Ox
 
-PERL	 = $(topdir)/../tools/perl
+PERL     = $(topdir)/../tools/perl
 PYTHON   = $(topdir)/../tools/python -E
 AR       = $(topdir)/../tools/ar
 RM       = $(topdir)/../tools/rm
-CC	 = gcc
+CC       = $(topdir)/../tools/gcc
 
 BASEGCCFLAGS = -static -nostdlib -nostdinc -m32 -march=i686
 

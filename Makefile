@@ -4,7 +4,7 @@
 PYTHON = tools/python -E
 PERL = tools/perl
 NASM = TZ= tools/nasm  # `TZ=' just to avoid opening /etc/TZ.
-CC = gcc
+CC = tools/gcc
 BASEGCCFLAGS = -static -nostdlib -nostdinc -m32 -march=i686
 
 ifeq ($(HEXDATE),)
@@ -76,7 +76,7 @@ liigboot_empty.img: liigboot_boot.nasm $(LIIGMAIN)
 	$(PYTHON) mkzip.py --do-add-install-zip --install=liigboot.img.install --mtime=$(HEXDATE2) --img=$@.tmp
 	tools/mv $@.tmp $@
 
-liigboot.img.install: install.c
+liigboot.img.install: install.c tools/gcc mini_gcc_frontend.py
 	$(CC) $(BASEGCCFLAGS) -D__LINTINY__ -D__LINTINY_DEFAULTLIBS__ -fno-stack-protector -fomit-frame-pointer -fno-ident -fno-builtin-exit -fno-builtin-_exit -fno-builtin-_Exit -fno-unwind-tables -fno-asynchronous-unwind-tables -isystem lintiny -Os -falign-functions=1 -mpreferred-stack-boundary=2 -falign-jumps=1 -falign-loops=1 -s -Wl,--build-id=none -Wl,-T,lintiny/lintiny.scr -W -Wall -Wextra -Werror -o $@ install.c lintiny/liblintiny.a
 #	xtiny gcc -W -Wall -Wextra -Werror -o $@ install.c
 #	gcc -m32 -s -static -nostdlib -nostdinc -Wl,--build-id=none -Wl,-T,lintiny/lintiny.scr -o liigboot.img.install o/install.o o/_start.o o/strcmp.o o/memcmp.o o/strcpy.o

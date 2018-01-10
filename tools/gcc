@@ -1,0 +1,2 @@
+#! /bin/sh --
+exec "${0%/*}"/../tools/python -E -- "${0%/*}"/../mini_gcc_frontend.py "$@"
