@@ -18,20 +18,6 @@
 MAKEFLAGS += -r
 MAKE      += -r
 
-BINDIR   = /usr/bin
-SBINDIR  = /sbin
-LIBDIR   = /usr/lib
-DATADIR  = /usr/share
-AUXDIR   = $(DATADIR)/syslinux
-DIAGDIR  = $(AUXDIR)/diag
-MANDIR   = /usr/man
-INCDIR   = /usr/include
-TFTPBOOT = /tftpboot
-COM32DIR = $(AUXDIR)/com32
-
-BOOTDIR  = /boot
-EXTLINUXDIR = $(BOOTDIR)/extlinux
-
 NASM     = TZ= $(topdir)/../tools/nasm
 NASMOPT  = -Ox
 
@@ -48,8 +34,6 @@ gcc_ok   = $(shell tmpf=gcc_ok.$$$$.tmp; \
 			-o $$tmpf 2>/dev/null ; \
 		   then echo '$(1)'; else echo '$(2)'; fi; \
 		   $(RM) -f $$tmpf)
-
-com32    = $(topdir)/com32
 
 # Common warnings we want for all gcc-generated code
 GCCWARN := -W -Wall -Wstrict-prototypes

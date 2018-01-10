@@ -24,7 +24,7 @@ MAKEDIR = $(topdir)/mk
 include $(MAKEDIR)/embedded.mk
 
 OPTFLAGS =
-INCLUDES = -I./include -I$(com32)/include
+INCLUDES = -I./include -I$(topdir)/com32/include
 
 # This is very similar to cp437; technically it's for Norway and Denmark,
 # but it's unlikely the characters that are different will be used in

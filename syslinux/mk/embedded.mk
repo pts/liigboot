@@ -40,14 +40,10 @@ CFLAGS    = $(BASEGCCFLAGS) $(GCCOPT) -g $(GCCWARN) -Wno-sign-compare $(OPTFLAGS
 
 .SUFFIXES: .c .o .S .s .i .elf .com .bin .asm .lst .c32 .lss
 
+% : %.c  # Cancel default rule.
+% : %.S  # Cancel default rule.
+
 %.o: %.c
-	$(CC) $(MAKEDEPS) $(CFLAGS) -c -o $@ $<
-%.i: %.c
-	$(CC) $(MAKEDEPS) $(CFLAGS) -E -o $@ $<
-%.s: %.c
-	$(CC) $(MAKEDEPS) $(CFLAGS) -S -o $@ $<
-# -Wa,-a=$*.lst
+	$(CC) $(CFLAGS) -c -o $@ $<
 %.o: %.S
-	$(CC) $(MAKEDEPS) $(CFLAGS) -D__ASSEMBLY__ -c -o $@ $<
-%.s: %.S
-	$(CC) $(MAKEDEPS) $(CFLAGS) -D__ASSEMBLY__ -E -o $@ $<
+	$(CC) $(CFLAGS) -D__ASSEMBLY__ -c -o $@ $<
