@@ -44,7 +44,7 @@ CC	 = gcc
 BASEGCCFLAGS = -static -nostdlib -nostdinc -m32 -march=i686
 
 gcc_ok   = $(shell tmpf=gcc_ok.$$$$.tmp; \
-		   if $(CC) $(GCCOPT) $(1) -c $(topdir)/dummy.c \
+		   if $(CC) $(BASEGCCFLAGS) $(GCCOPT) $(1) -c $(topdir)/dummy.c \
 			-o $$tmpf 2>/dev/null ; \
 		   then echo '$(1)'; else echo '$(2)'; fi; \
 		   $(RM) -f $$tmpf)
