@@ -51,7 +51,7 @@ static void write_err(const char *msg) {
 }
 
 static xbool_t do_rm = 0;
-static char *argv0 = NULL;
+__attribute__((aligned(1))) static char *argv0 = NULL;
 
 __attribute__((noreturn)) static void bye(int exit_code) {
   if (do_rm) {
@@ -204,11 +204,7 @@ int main(int argc, char **argv) {
     do_rm = 1;
     ++argv;
   }
-  /* Performance hack:
-   * ".install" + 1 is better than "install", because `ld -T lintiny.scr'
-   * doesn't do string suffix deduplication.
-   */
-  if (!*argv || 0 != strcmp(*argv, ".install" + 1)) { usage:
+  if (!*argv || 0 != strcmp(*argv, "install")) { usage:
     write_err("Tool to install liigboot to Master Boot Record (MBR).\n"
               "See also https://liigboot.github.io/install\n"
               "Usage: ");

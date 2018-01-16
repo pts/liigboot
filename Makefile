@@ -77,9 +77,11 @@ liigboot_empty.img: liigboot_boot.nasm $(LIIGMAIN)
 	tools/mv $@.tmp $@
 
 liigboot.img.install: install.c tools/gcc mini_gcc_frontend.py
-	$(CC) $(BASEGCCFLAGS) -D__LINTINY__ -D__LINTINY_DEFAULTLIBS__ -fno-stack-protector -fomit-frame-pointer -fno-ident -fno-builtin-exit -fno-builtin-_exit -fno-builtin-_Exit -fno-unwind-tables -fno-asynchronous-unwind-tables -isystem lintiny -Os -falign-functions=1 -mpreferred-stack-boundary=2 -falign-jumps=1 -falign-loops=1 -s -Wl,--build-id=none -Wl,-T,lintiny/lintiny.scr -W -Wall -Wextra -Werror -o $@ install.c lintiny/liblintiny.a
-#	xtiny gcc -W -Wall -Wextra -Werror -o $@ install.c
-#	gcc -m32 -s -static -nostdlib -nostdinc -Wl,--build-id=none -Wl,-T,lintiny/lintiny.scr -o liigboot.img.install o/install.o o/_start.o o/strcmp.o o/memcmp.o o/strcpy.o
+	$(CC) $(BASEGCCFLAGS) -D__LINTINY__ -D__LINTINY_DEFAULTLIBS__ -fno-stack-protector -fomit-frame-pointer -fno-ident -fno-builtin-exit -fno-builtin-_exit -fno-builtin-_Exit -fno-unwind-tables -fno-asynchronous-unwind-tables -isystem lintiny -Os -falign-functions=1 -mpreferred-stack-boundary=2 -falign-jumps=1 -falign-loops=1 -s -W -Wall -Wextra -Werror -S -o $@.tmp.s install.c
+	$(PERL) -ni -e 'if (m@[.]section[ \t]+[.]note[.]GNU-stack,@) {} else { print }' $@.tmp.s
+	$(CC) $(BASEGCCFLAGS) -Wl,--build-id=none -Wl,-N -o $@.tmp $@.tmp.s lintiny/liblintiny.a
+	$(PYTHON) sstrip.py $@.tmp
+	tools/mv $@.tmp $@
 
 liigboot.img.install.debug: install.c
 	xstatic gcc -g -DDEBUG -W -Wall -Wextra -Werror -o $@ install.c
@@ -114,5 +116,5 @@ grub4dos.bs: external/grub4dos-0.4.4.grldr fallback_menu.lst patch_grldr.py grub
 	$(PYTHON) patch_grldr.py --out=$@ --menu=$<
 
 clean:
-	tools/rm -f *.tmp liigresc_bs.bin liigboot_bs.bin liigresc_empty.img liigboot_empty.img liigboot.img liigboot.zip.tmp liigresc.zip.tmp liigboot.img.install liigboot.zip.tmp.ziptmp liigresc.zip.tmp.ziptmp liigboot.zip mcopy.tmp liigmain.bin hiiimain.uncompressed.bin hiiimain.compressed.bin grldr syslinux.cfg.simplified menu.lst.simplified grub4dos.bs grub4dos.bs.tmp memtest.uncompressed.bs memtest.compressed.bs
+	tools/rm -f *.tmp liigresc_bs.bin liigboot_bs.bin liigresc_empty.img liigboot_empty.img liigboot.img liigboot.zip.tmp liigresc.zip.tmp liigboot.img.install liigboot.zip.tmp.ziptmp liigresc.zip.tmp.ziptmp liigboot.zip mcopy.tmp liigmain.bin hiiimain.uncompressed.bin hiiimain.compressed.bin grldr syslinux.cfg.simplified menu.lst.simplified grub4dos.bs grub4dos.bs.tmp memtest.uncompressed.bs memtest.compressed.bs liigboot.img.install.tmp.s
 	$(MAKE) -C syslinux clean
