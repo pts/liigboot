@@ -256,6 +256,12 @@ def main(argv):
         (0x1a18a, '\x78\x0c', '\xeb\x0c'),
         (0x1abee, '\x78\x0c', '\xeb\x0c'),
         (0x1b009, '\x78\x0c', '\xeb\x0c'),
+        # Don't check (current_drive & 0x80) in real_open_partition.
+        # This makes `cat (fd0', <Tab> work.
+        (0x1ad09, '\x79\x31', '\x90\x90'),
+        # Don't check (! (current_drive & 0x80)) in real_open_partition.
+        # This makes `using whole disk' appear in `cat (fd0', <Tab>.
+        (0x1aeae, '\x78\x0f', '\x90\x90'),
     )
     data = patch_code(data, patches)
     data = patch_menu(data, menu_data)
