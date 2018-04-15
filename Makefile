@@ -67,12 +67,13 @@ liigboot_empty.img: liigboot_boot.nasm $(LIIGMAIN)
 .PRECIOUS: liigboot.zip
 .PRECIOUS: liigresc.zip
 # !! Why is this up to date after `rm memtest.compressed.bs' ?
-%.zip: %_empty.img memtest.compressed.bs syslinux.cfg.simplified menu.lst.simplified grub4dos.bs mkzip.py liigboot.img.install
+%.zip: %_empty.img memtest.compressed.bs syslinux.cfg.simplified menu.lst.simplified grub4dos.bs mkzip.py liigboot.img.install external/netboot.xyz-1.04.kernel
 	tools/cp -a $< $@.tmp
 	$(PYTHON) copy_to_fat.py --img=$@.tmp --in=syslinux.cfg.simplified  --out=syslinux.cfg  --mtime=$(HEXDATE2)
 	$(PYTHON) copy_to_fat.py --img=$@.tmp --in=menu.lst.simplified      --out=menu.lst      --mtime=$(HEXDATE2)
 	$(PYTHON) copy_to_fat.py --img=$@.tmp --in=grub4dos.bs              --out=grub4dos.bs   --mtime=$(HEXDATE2)
 	$(PYTHON) copy_to_fat.py --img=$@.tmp --in=memtest.compressed.bs    --out=memtest.bs    --mtime=$(HEXDATE2)
+	$(PYTHON) copy_to_fat.py --img=$@.tmp --in=external/netboot.xyz-1.04.kernel --out=netbootx.k --mtime=$(HEXDATE2)
 	$(PYTHON) mkzip.py --do-add-install-zip --install=liigboot.img.install --mtime=$(HEXDATE2) --img=$@.tmp
 	tools/mv $@.tmp $@
 

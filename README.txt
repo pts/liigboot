@@ -140,6 +140,14 @@ If it doesn't start, run it without the `-enable-kvm'.
 Please note that memtest hangs with `-enable-kvm' in QEMU 2.0.0, as a
 workaround run QEMU without this flag.
 
+You can also try booting installers and other rescue software from
+http://netboot.xyz/ from Liigboot like this command.
+
+  $ qemu-system-i386 -m 256 -hda liigboot.zip -enable-kvm -net nic -net user
+
+Then at the `ligboot:' prompt, type `netboot' (without the quotes) and press
+<Enter>.
+
 How to build Liigboot
 ~~~~~~~~~~~~~~~~~~~~~
 These build instructions are for an i386 or amd64 Linux host system.
