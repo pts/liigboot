@@ -1,0 +1,262 @@
+by pts@fazekas.hu at Tue Oct 22 14:12:09 CEST 2019
+
+(This file describes the planned features of Liigboot. None of this is
+implemented, unless otherwise indicated.)
+
+Use cases of Liigboot:
+
+* Discover bootable Linux and Windows partitions on the system, and boot any
+  of them, without configuration.
+
+* Boot Linux (mostly Debian and Ubuntu) even if it's not bootable (e.g. GRUB
+  wasn't installed or it's broken).
+
+* Copy a bootable Linux filesystem from a pen drive to an internal drive,
+  and boot Linux from it.
+
+  This is a software distribution mechanism: on computer A; you create a
+  bootable Linux filesystem; yo copy this filesystem to a partition on the
+  pen drive; you install Liigboot to the pen drive, you boot Liigboot on
+  computer B from the pen drive; you run the `install ...' command, you run
+  the `copy fs ...' command. Each time you need to reimage computer B, you
+  repeat.
+
+  This is useful for upgrading the Linux software of airgapped computers
+  (i.e. with networking disabled on purpose).
+
+* Convenient way to install many Linux distributions from the network or to
+  do rescue work using netboot.xyz. (Install Liigboot to a pen drive on
+  another computer, it contains a copy of the nextboot.xyz kernel, then boot
+  Liigboot from the pen drive, then run the `netboot.xyz' command.)
+
+* Convenient way to run memtest (checking for memory hardware errors).
+
+* Convenient way to run GRUB4DOS for filesystem exploration and rescue
+  booting.
+
+* Customizable syslinux.cfg file on a FAT filesystem image: preconfigure any
+  boot options, change the default etc.
+
+Only MBR disk label (partition table) is supported (GPT isn't), up to 2 TiB.
+
+Only BIOS booting is supported (EFI and UEFI isn't).
+
+Drive (device) letters (<dl>):
+
+* a: the first of c...z except for b
+* b: the device Liigboot was booted from
+* c: the 1st hard drive: (hd0)
+* d: the 2nd hard drive: (hd1)
+* ...
+* ?: the 1st floppy drive: (fd0); uses the letter after the last hard drive
+* ?+1: the 2nd floppy drive: (fd1)
+* ...
+* F: the 1st floppy drive
+* G: the 2nd floppy drive
+* ...
+
+Partition numbers (<pn>):
+
+* b: the first partition `boot <dl>b' command considers bootable (see below)
+* f: the first partition with the bootable (active) flag set
+* 0: the entire drive
+* 1: the 1st primary partition: (hd?,0)
+* 2: the 2nd primary partition: (hd?,1)
+* 3: the 3rd primary partition: (hd?,2)
+* 4: the 4th primary partition: (hd?,3)
+* (Extended partitions aren't supported.)
+
+A block device ID (<bid>) is <dl><pn>, e.g. `ab'.
+
+Supported filesystems for reading:
+
+* ext: ext2, ext3 and ext4
+* fat: vfat, fat12, fat16 and fat32
+* ntfs
+* btrfs: (experimental, only mirroring)
+
+Boot commands:
+
+* boot
+
+  Boot the reasonable-to-boot partition from the drive Liigboot was booted
+  from. Equivalent to `boot bb', see details there.
+
+  This is the default command, it gets run if you just press <Enter> at the
+  Liigboot prompt, or if you wait 1 second (without pressing a key) after
+  the first Liigboot prompt.
+
+* help
+
+  Display a short list of commands a link to the home page with the full
+  description of commands.
+
+* memtest
+
+  Boot into the embedded memtest indefinitely.
+
+* grub
+  grub4dos
+
+  Boot into the embedded GRUB4DOS.
+
+* netboot.xyz
+  netboot
+  n
+
+  Boot from network using the embedded https://netboot.xyz/ iPXE boot code,
+  containing the NIC (Ethernet network card) drivers.
+
+* tetris
+
+  Boot into the embedded tetris game.
+
+  TODO(pts): Add more small boot sector games.
+
+* install to <dl>
+
+  Install Liigboot (copying it from drive b) to the first 1 MiB of the
+  specified drive, keeping the drive's original partition table in the MBR
+  intact.
+
+  After the installation, booting from that drive will boot Liigboot.
+
+* install from <dl> to <dl>
+
+  Install Liigboot from the specified drive to the first 1 MiB of the other
+  specified drive, see details above.
+
+* list partitions
+  list par
+  list
+
+  List available partitions with their sizes, filesystems and whether they
+  are bootable.
+
+  TODO(pts): Add paging after 25 lines?
+
+* list drives
+  list dri
+
+  List available drives and their sizes.
+
+* list <dl>
+
+  List partitions on the specified drive.
+
+* list <bid>
+
+  List the specified partition (with its size, filesystem and whether it is
+  bootable).
+
+* boot par <bid>
+  boot par <dl>
+
+  Boot from the boot sector (first sector) of the specified partition or
+  from the MBR of the specified drive. If it doesn't seem to contain boot
+  code, report an error instead.
+
+  As a special example, `boot par b0' and `boot par b' reboot Liigboot.
+
+  Boot code is usually installed by the instealler of boot managers and
+  operating systems, e.g. GRUB (stage 0), LILO, SYSLINUX, Ligboot, Windows
+  etc.
+
+* boot force <bid>
+  boot force <dl>
+
+  Like above, but boot unconditionally, with checking for valid boot code.
+
+* boot linux <bid> [...]
+  boot linux <dl> [...]
+
+  Boot Linux from the /vmlinuz and /initrd.img files (usually symlinks) on
+  the specified partition. If either of these files don't exist, report an
+  error instead. Autofill some /proc/cmdline flags such as root=UUID=...
+  before booting.
+
+  Append the `...' to /proc/cmdline before booting.
+
+  This only works if the Linux kernel was installed to that partition,
+  without using a separate /boot partition. Recommended Linux distributions:
+  Debian and Ubuntu.
+
+  TODO(pts): Look for kernel initrd files in /boot, and boot the one with
+  the largest version number.
+
+* boot tc <bid> [...]
+  boot tc <dl> [...]
+
+  Like `boot linux', but use /cde/vmlinuz instead of /vmlinuz and
+  /cde/core.gz instead of /initrd.img. Also, if `/cde/onboot.lst' is
+  available, append `cde' to /proc/cmdline.
+
+  This is useful for booting Tiny Core Linux. This is how you can prepare
+  the /cde directory (if you are already running Linux):
+
+    $ wget -O TinyCore-10.1.iso http://tinycorelinux.net/10.x/x86/release/TinyCore-10.1.iso
+    $ mkdir TinyCore-10.1
+    $ (cd TinyCore-10.1 && 7z x ../TinyCore-10.1.iso)
+    $ mv TinyCore-10.1/boot/vmlinuz TinyCore-10.1/cde/
+    $ mv TinyCore-10.1/boot/core.gz TinyCore-10.1/cde/
+    $ sudo rm -rf /cde
+    $ sudo mv TinyCore-10.1/cde /
+    $ rm -rf TinyCore-10.1 TinyCore-10.1.iso
+
+* boot <bid>
+  boot <dl>
+
+  If the specified partition is bootable (according to `boot par ...'), then
+  boot from it. Otherwise, if the specified partition contains a Linux
+  kernel (according to `boot linux ...'), boot from that Linux kernel.
+  Otherwise, report an error.
+
+  <dl> is equivalent to <dl>0.
+
+  If <bid> looks like <dl>b, then consider the partitions in this
+  order: f, 1, 2, 3, 4, 0. Use the first one which `boot par ...' or
+  `boot linux ...' considers bootable. If none, report an error. If unsure,
+  do a `list <dl>b' first, it will expand both <dl> and <pn> for you.
+
+* uuid random <bid>
+
+  Generate a random filesystem
+  UUID different from any other UUIDs on the system, and modify the
+  filesystem UUID in <bid>. Also modify the UUID in the
+  /boot/grub/menu.lst, /boot/grub/grub.cfg, /boot/menu.lst, /menu.lst and
+  /etc/fstab files on the target filesystem.
+
+* copy par from <bid> to <bid>
+
+  Copy the the specified partition verbatim from source to target. If the
+  target is smaller than the source, report an error instead.
+
+  Copy in the right order even if the source and the target partitions overlap.
+
+  TODO(pts): How slow is this copy operation (for 10 GiB)? What is the
+  factor? Does seek time dominate because of a small copy buffer?
+
+* copy fs from <bid> to par <bid>
+
+  Copy the the specified filesystem from source to target, like `copy par
+  from <bid> to <bid>', but detect the source file system size, and copy
+  only that many bytes. If the target device is smaller than the source
+  filesystem, report an error instead. If the source filesystem is not
+  detected, report an error instead.
+
+* copy fs from <bid> to <bid>
+
+  Like `copy fs from <bid> to par <bid>', but generate also
+  `uuid random <bid>' on the target after the copy.
+
+* copy ... and boot ...
+  copy ... && boot ...
+
+  Do the specified `copy ...' command, and if it succeeds, do the specified
+  `boot ...' command.
+
+It would be possible to add a filesystem explorer (with commands:
+select <bid>; ls <dir>; cat <file>), but GRUB does it better, so please use
+the `grub' command instead.
+
+__END__
