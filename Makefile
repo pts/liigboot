@@ -48,10 +48,11 @@ endif
 
 all: liigboot.zip
 
+# -DLIIGMAIN_SECTOR_COUNT=58 below is a reasonable fake.
 liigresc_bs.bin: liigboot_boot.nasm
-	$(NASM) -f bin -o $@ -DLIIGRESC $(BOOT_DEFINES) $<
+	$(NASM) -f bin -o $@ -DLIIGRESC -DLIIGMAIN_SECTOR_COUNT=58 $(BOOT_DEFINES) $<
 liigboot_bs.bin: liigboot_boot.nasm
-	$(NASM) -f bin -o $@ -DLIIGBOOT $(BOOT_DEFINES) $<
+	$(NASM) -f bin -o $@ -DLIIGBOOT -DLIIGMAIN_SECTOR_COUNT=58 $(BOOT_DEFINES) $<
 hiiimain.uncompressed.bin: hiiimain.nasm
 	$(NASM) -f bin -o $@ $(BOOT_DEFINES) $<
 grub_loader.bin: grub_loader.nasm
