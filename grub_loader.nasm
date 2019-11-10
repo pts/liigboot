@@ -4,10 +4,11 @@
 ;
 ; GRUB pre_stage2:
 ;
-; * pre_stage2 starts with (db '0.97', 0) at offset 0x12.
+; * symbol main starts with `jmp 0:0x8270': db 0xea; dw 0x8720, 0
+; * pre_stage2 starts with (db '0.97', 0) at offset 0x12, symbol version_string
 ; * pre_stage2 is called `stage2_second_buffer' in the GRUB4DOS sources.
-; * In GRUB4DOS grldr starts at file offset 0x2000.
-; * (In Ubuntu stage2 starts at file offset 0x200).
+; * In GRUB4DOS grldr main starts at file offset 0x2000.
+; * (In Ubuntu stage2 main starts at file offset 0x200).
 ; * GRUB4DOS grldr load to memory at 0x8200.
 ; * boot sector code is loaded by BIOS at 0x7c00.
 ; * Thus if the boot sector is loaded flat with pre_stage2 in the same image.
