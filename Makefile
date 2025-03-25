@@ -112,6 +112,8 @@ syslinux/libcore/libcore.a: $(wildcard $(addprefix syslinux/,libcore/include/*.h
 
 grub4dos.bs: external/grub4dos-0.4.4.grldr fallback_menu.lst patch_grldr.py grub_loader.bin tools/upxbc tools/upx
 	$(PYTHON) patch_grldr.py --out=$@ --in=$< --menu=fallback_menu.lst --loader=grub_loader.bin --do-compress
+grub4dos.uncompressed.bs: external/grub4dos-0.4.4.grldr fallback_menu.lst patch_grldr.py grub_loader.bin tools/upxbc tools/upx
+	$(PYTHON) patch_grldr.py --out=$@ --in=$< --menu=fallback_menu.lst --loader=grub_loader.bin
 .PRECIOUS: syslinux.cfg.simplified
 .PRECIOUS: menu.lst.simplified
 %.simplified: % patch_grldr.py
